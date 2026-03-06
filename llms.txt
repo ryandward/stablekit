@@ -141,6 +141,26 @@ React.cloneElement(child, {
 When you need to enforce rigid layout physics, always operate at the React
 layer (cloneElement, inline styles, context) — never at the CSS layer.
 
+## Internal Contribution Rules
+
+Never write raw `process.env.NODE_ENV` checks in components. Always import
+and use `invariant` or `warning` from `src/internal/invariant.ts`.
+
+```ts
+// WRONG — raw environment check in a component
+if (process.env.NODE_ENV !== "production") {
+  throw new Error("bad usage");
+}
+
+// CORRECT — declarative assertion
+import { invariant } from "../internal/invariant";
+invariant(someCondition, "Explanation of what went wrong.");
+```
+
+`invariant(condition, message)` throws a fatal error in development and is
+stripped entirely in production. `warning(condition, message)` emits a
+console.warn in development and is stripped entirely in production.
+
 ## Component selection guide
 
 | Problem                                    | Component            |
