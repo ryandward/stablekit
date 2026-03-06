@@ -15,6 +15,12 @@ export type { LayoutMapProps } from "./components/layout-map";
 export { SizeRatchet } from "./components/size-ratchet";
 export type { SizeRatchetProps } from "./components/size-ratchet";
 
+export { StableCounter } from "./components/stable-counter";
+export type { StableCounterProps } from "./components/stable-counter";
+
+export { StableField } from "./components/stable-field";
+export type { StableFieldProps } from "./components/stable-field";
+
 // ── Temporal Stability (Loading Skeletons) ────────────────────────────────────
 
 export { LoadingBoundary } from "./components/loading-boundary";

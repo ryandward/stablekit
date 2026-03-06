@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { LoadingBoundary, StableText, MediaSkeleton, LayoutMap } from "stablekit";
+import { SKLabel } from "@/components/sk-label";
 import { cn } from "@/lib/utils";
 import type { Customer } from "@/data/customers";
 
@@ -20,24 +21,22 @@ export function CustomerProfile({ customer, mode }: CustomerProfileProps) {
 /* -------------------------------------------------------------------------- */
 
 function NaiveProfile({ customer }: { customer: Customer }) {
-  const [loading, setLoading] = useState(true);
-  const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
+  const [phase, setPhase] = useState<"spinner" | "text" | "avatar" | "done">("spinner");
   const [activeTab, setActiveTab] = useState<"profile" | "invoices">("profile");
 
   useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 800);
-    return () => clearTimeout(t);
+    // Phase 1: spinner for 600ms
+    const t1 = setTimeout(() => setPhase("text"), 600);
+    // Phase 2: text appears (no avatar yet) at 600ms
+    const t2 = setTimeout(() => setPhase("avatar"), 1000);
+    // Phase 3: avatar pops in at 1000ms causing reflow
+    const t3 = setTimeout(() => setPhase("done"), 1400);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, []);
 
-  useEffect(() => {
-    if (loading) return;
-    const t = setTimeout(() => setAvatarSrc(customer.avatar), 400);
-    return () => clearTimeout(t);
-  }, [loading, customer.avatar]);
-
-  if (loading) {
+  if (phase === "spinner") {
     return (
-      <div className="p-5 pt-4 flex items-center justify-center">
+      <div className="p-5 pt-4 flex items-center justify-center h-16">
         <svg className="animate-spin size-8 text-muted-foreground" viewBox="0 0 24 24" fill="none">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -49,7 +48,15 @@ function NaiveProfile({ customer }: { customer: Customer }) {
   return (
     <div className="p-5 pt-4">
       <div className="flex gap-5">
-        {avatarSrc && <img src={avatarSrc} alt={customer.name} className="rounded-full" />}
+        {/* Avatar pops in with no placeholder, causing layout shift */}
+        {(phase === "avatar" || phase === "done") && (
+          <img
+            src={customer.avatar}
+            alt={customer.name}
+            className="rounded-full flex-shrink-0"
+            style={{ width: 96, height: 96 }}
+          />
+        )}
         <div className="min-w-0">
           <p className="text-xl font-semibold">{customer.name}</p>
           <p className="text-sm text-muted-foreground">{customer.title}</p>
@@ -60,6 +67,7 @@ function NaiveProfile({ customer }: { customer: Customer }) {
       <div className="mt-5">
         <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
         <div className="mt-4">
+          {/* Ternary swap: causes height jump when switching tabs */}
           {activeTab === "profile"
             ? <ProfileContent customer={customer} />
             : <InvoiceContent customer={customer} />}
@@ -85,6 +93,14 @@ function StableProfile({ customer }: { customer: Customer }) {
   return (
     <LoadingBoundary loading={loading} exitDuration={150}>
       <div className="p-5 pt-4">
+        {/* Annotations row */}
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          <SKLabel component="LoadingBoundary" paradigm="temporal" />
+          <SKLabel component="MediaSkeleton" paradigm="temporal" />
+          <SKLabel component="StableText" paradigm="temporal" />
+          <SKLabel component="LayoutMap" paradigm="spatial" />
+        </div>
+
         <div className="flex gap-5">
           <MediaSkeleton
             aspectRatio={1}

@@ -17,7 +17,7 @@ const StableKitModeContext = createContext<StableKitModeContextValue>({
 });
 
 export function StableKitModeProvider({ children }: { children: ReactNode }) {
-  const [enabled, setEnabled] = useState(true);
+  const [enabled, setEnabled] = useState(false);
   const toggle = useCallback(() => setEnabled((prev) => !prev), []);
 
   return (

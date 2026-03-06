@@ -1,12 +1,13 @@
 import { useStableKitMode } from "@/context/stablekit-mode";
+import { CLSCounter } from "@/components/cls-counter";
 import { cn } from "@/lib/utils";
 
 export function ModeToggle() {
   const { enabled, toggle } = useStableKitMode();
 
   return (
-    <div className="flex flex-col items-center">
-      <span className="text-xs font-medium tracking-widest uppercase text-muted-foreground mb-2">
+    <div className="flex flex-col items-center gap-3">
+      <span className="text-xs font-medium tracking-widest uppercase text-muted-foreground">
         stablekit
       </span>
       <div className="relative h-12 w-72 rounded-full bg-slate-100 p-1 border border-border flex">
@@ -40,6 +41,7 @@ export function ModeToggle() {
           ON
         </button>
       </div>
+      <CLSCounter />
     </div>
   );
 }

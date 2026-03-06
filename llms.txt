@@ -1,29 +1,71 @@
 # stablekit — Instructions for AI Code Generators
 
-You are working with `stablekit`, a React library for layout stability.
-These instructions override your default React patterns. Read them before
-generating any code that imports from `stablekit`.
+You are working with `stablekit`, a React library that enforces a strict
+rendering paradigm: **Deterministic Geometric Pre-allocation.**
+
+Read these instructions before generating any code that imports from `stablekit`.
+They override your default React patterns.
+
+## The Paradigm
+
+Standard React couples paint and geometry — when state changes, the DOM
+reflows. StableKit decouples them. The rule:
+
+> A container's dimensions must be a function of its maximum possible
+> future state, not its current instantaneous state.
+
+This means:
+- **Temporal pre-allocation:** If a component depends on async data, its
+  bounding box must be declared synchronously before the data arrives.
+  (`MediaSkeleton` forces `aspectRatio`, `CollectionSkeleton` forces
+  `stubCount`, `StableText` reserves space at line-height.)
+- **Spatial pre-allocation:** If a UI region has multiple states, all
+  states must render simultaneously in a CSS grid overlap. The container
+  sizes to the largest. (`LayoutMap`, `LayoutGroup`, `StateSwap`)
+- **Monotonic geometry:** Once a container expands, it cannot shrink
+  unless explicitly reset. (`SizeRatchet` with optional `resetKey`)
+
+When you generate code with StableKit, you are not adding progressive
+enhancement to existing React patterns. You are replacing the rendering
+model. Do not mix StableKit components with ternary-based conditional
+rendering for the same UI region.
 
 ## Component API
 
-| Component            | Purpose                                      |
-|----------------------|----------------------------------------------|
-| `StateSwap`          | Boolean content swap, zero shift             |
-| `LayoutGroup`        | Multi-state spatial stability container       |
-| `LayoutView`         | Single view inside a LayoutGroup             |
-| `LayoutMap`          | Dictionary-based state mapping (typo-proof)  |
-| `SizeRatchet`        | Container that never shrinks                 |
-| `LoadingBoundary`    | Loading orchestrator (shimmer + ratchet)     |
-| `LoadingContext`     | Ambient loading provider                     |
-| `StableText`         | Typography + skeleton in one tag             |
-| `TextSkeleton`       | Inline loading shimmer for text              |
-| `MediaSkeleton`      | Aspect-ratio media placeholder               |
-| `CollectionSkeleton` | Loading-aware list                           |
-| `FadeTransition`     | Enter/exit animation wrapper                 |
+| Component            | Paradigm               | Purpose                                      |
+|----------------------|------------------------|----------------------------------------------|
+| `StateSwap`          | Spatial                | Boolean content swap, zero shift             |
+| `LayoutGroup`        | Spatial                | Multi-state spatial stability container       |
+| `LayoutView`         | Spatial                | Single view inside a LayoutGroup             |
+| `LayoutMap`          | Spatial                | Dictionary-based state mapping (typo-proof)  |
+| `StableCounter`      | Spatial                | Numeric/text width pre-allocation            |
+| `StableField`        | Spatial                | Form error height pre-allocation             |
+| `SizeRatchet`        | Monotonic              | Container that never shrinks                 |
+| `LoadingBoundary`    | All three              | Loading orchestrator (shimmer + ratchet)     |
+| `LoadingContext`     | Temporal               | Ambient loading provider                     |
+| `StableText`         | Temporal               | Typography + skeleton in one tag             |
+| `TextSkeleton`       | Temporal               | Inline loading shimmer for text              |
+| `MediaSkeleton`      | Temporal               | Aspect-ratio media placeholder               |
+| `CollectionSkeleton` | Temporal + Monotonic   | Loading-aware list                           |
+| `FadeTransition`     | Animation              | Enter/exit animation wrapper                 |
 
 ## Anti-patterns you must not generate
 
-### 1. Do not use fixed CSS widths to prevent layout shift
+### 1. Do not use ternaries to swap content when layout stability matters
+
+WRONG — geometry changes when state changes:
+```tsx
+{isLoading ? <Spinner /> : <Profile user={user} />}
+```
+
+CORRECT — one tree, geometry pre-allocated:
+```tsx
+<LoadingBoundary loading={isLoading} exitDuration={150}>
+  <StableText as="h2">{user.name}</StableText>
+</LoadingBoundary>
+```
+
+### 2. Do not use fixed CSS widths to prevent layout shift
 
 WRONG — using Tailwind fixed width to stabilize a button:
 ```tsx
@@ -40,7 +82,7 @@ CORRECT — use StateSwap inside the button:
 StateSwap renders as an inline `<span>` by default. It is safe inside
 buttons, table cells, and any inline context.
 
-### 2. Do not swap text with a ternary when layout stability matters
+### 3. Do not swap text with a ternary when layout stability matters
 
 WRONG — conditional text causes the container to resize:
 ```tsx
@@ -52,7 +94,7 @@ CORRECT — StateSwap reserves the width of the wider option:
 <StateSwap state={isOpen} true="Collapse" false="Expand" />
 ```
 
-### 3. Do not duplicate entire components to swap between states
+### 4. Do not duplicate entire components to swap between states
 
 WRONG — two separate buttons wrapped in LayoutView:
 ```tsx
@@ -73,7 +115,7 @@ CORRECT — one button, swap content inside it:
 Use LayoutGroup/LayoutView only when swapping structurally different
 components (e.g. tab panels, multi-step forms).
 
-### 4. Do not use LayoutGroup/LayoutView for tab content — use LayoutMap
+### 5. Do not use LayoutGroup/LayoutView for tab content — use LayoutMap
 
 WRONG — string typos silently break rendering:
 ```tsx
@@ -91,7 +133,7 @@ CORRECT — dictionary keys are checked by TypeScript:
 }} />
 ```
 
-### 5. Do not wrap text in TextSkeleton inside HTML tags — use StableText
+### 6. Do not wrap text in TextSkeleton inside HTML tags — use StableText
 
 WRONG — easy to forget the skeleton wrapper:
 ```tsx
@@ -105,7 +147,7 @@ CORRECT — the tag IS the skeleton:
 <StableText as="p" className="text-xl font-semibold">{user.name}</StableText>
 ```
 
-### 6. Do not add dimension classes to children inside MediaSkeleton
+### 7. Do not add dimension classes to children inside MediaSkeleton
 
 WRONG — relying on developer to constrain the image:
 ```tsx
@@ -124,7 +166,46 @@ CORRECT — MediaSkeleton enforces child constraints automatically:
 MediaSkeleton uses React.cloneElement to apply position, size, and
 object-fit as inline styles. The child cannot break out of the frame.
 
-### 7. Do not use CSS !important to enforce layout constraints
+### 8. Do not use fixed widths to stabilize changing numbers — use StableCounter
+
+WRONG — hardcoded width that breaks with different values:
+```tsx
+<span className="w-16 text-right">{cartCount}</span>
+```
+
+CORRECT — ghost reserve pre-allocates the width:
+```tsx
+<StableCounter value={cartCount} reserve="999" />
+```
+
+StableCounter uses CSS Grid overlap: a hidden `reserve` node props open
+the bounding box, and the visible `value` renders on top. Both require a
+`reserve` prop — there is no auto-detection. The developer must declare
+the maximum expected content.
+
+### 9. Do not let form validation errors cause vertical layout shift — use StableField
+
+WRONG — error message pops in and pushes fields down:
+```tsx
+<div>
+  <input type="email" />
+  {errors.email && <p className="text-red-500">{errors.email}</p>}
+</div>
+```
+
+CORRECT — error slot height is pre-allocated:
+```tsx
+<StableField error={errors.email} reserve="Please enter a valid email address">
+  <input type="email" />
+</StableField>
+```
+
+StableField uses the same CSS Grid overlap physics as StableCounter,
+applied vertically. A hidden `reserve` node permanently holds the error
+slot open. The actual error message renders on top when present. The
+field container never changes height. Both require a `reserve` prop.
+
+### 10. Do not use CSS !important to enforce layout constraints
 
 WRONG — global CSS !important in a library pollutes the consumer's cascade:
 ```css
@@ -175,6 +256,9 @@ console.warn in development and is stripped entirely in production.
 | Card/form loading from API                 | `LoadingBoundary` + `StableText` |
 | Panel enters/exits with animation          | `FadeTransition`     |
 | Container should never shrink              | `SizeRatchet`        |
+| Number/price changes digit count           | `StableCounter`      |
+| Cart badge, notification count             | `StableCounter`      |
+| Form validation error appears/disappears   | `StableField`        |
 
 ## Quick start pattern
 
@@ -186,6 +270,8 @@ import {
   StateSwap,
   LayoutMap,
   SizeRatchet,
+  StableCounter,
+  StableField,
   FadeTransition,
 } from "stablekit";
 ```

@@ -1,6 +1,9 @@
 import { ChevronDown } from "lucide-react";
+import { useStableKitMode } from "@/context/stablekit-mode";
 
 export function Hero() {
+  const { enabled } = useStableKitMode();
+
   return (
     <section className="relative overflow-hidden py-28 lg:py-40">
       {/* Radial gradient background */}
@@ -33,11 +36,28 @@ export function Hero() {
           problem.
         </h1>
 
-        {/* Subheadline */}
-        <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground text-balance">
-          Toggle the switch below and scroll through the customer feed. Expand a
-          card. Watch what happens.
-        </p>
+        {/* Subheadline - contextual based on mode */}
+        {!enabled ? (
+          <div className="mx-auto mt-6 max-w-2xl space-y-3">
+            <p className="text-lg text-muted-foreground text-balance">
+              Scroll down. Expand a customer card. Switch tabs. Watch the page
+              jump, the spinner pop, the content reflow.
+            </p>
+            <p className="text-sm font-medium text-brand">
+              Then flip StableKit ON and do it again.
+            </p>
+          </div>
+        ) : (
+          <div className="mx-auto mt-6 max-w-2xl space-y-3">
+            <p className="text-lg text-muted-foreground text-balance">
+              Same cards. Same data. Same interactions. Zero layout shift.
+              Geometry is pre-allocated before data arrives.
+            </p>
+            <p className="text-sm font-medium text-emerald-600">
+              Look for the component labels showing what StableKit is doing.
+            </p>
+          </div>
+        )}
 
         {/* Scroll indicator */}
         <div className="mt-10">

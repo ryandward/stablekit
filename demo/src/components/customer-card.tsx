@@ -1,6 +1,7 @@
 import { FadeTransition, StateSwap } from "stablekit";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useStableKitMode } from "@/context/stablekit-mode";
+import { SKLabel } from "@/components/sk-label";
 import { cn } from "@/lib/utils";
 import { CustomerProfile } from "@/components/customer-profile";
 import type { Customer } from "@/data/customers";
@@ -75,6 +76,13 @@ export function CustomerCard({
           </button>
         </div>
       </div>
+
+      {/* StateSwap annotation */}
+      {enabled && expanded && (
+        <div className="px-5 -mt-2 mb-2">
+          <SKLabel component="StateSwap" paradigm="spatial" />
+        </div>
+      )}
 
       {/* Expanded area */}
       {enabled ? (

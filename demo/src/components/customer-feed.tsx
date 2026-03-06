@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { SizeRatchet } from "stablekit";
 import { useStableKitMode } from "@/context/stablekit-mode";
+import { SKLabel } from "@/components/sk-label";
 import { customers } from "@/data/customers";
 import { CustomerCard } from "@/components/customer-card";
 
@@ -32,6 +33,9 @@ export function CustomerFeed() {
           <span className="text-xs text-muted-foreground bg-muted rounded-full px-2.5 py-0.5">
             {customers.length} accounts
           </span>
+          {enabled && (
+            <SKLabel component="SizeRatchet" paradigm="monotonic" />
+          )}
         </div>
 
         {/* Card list */}
