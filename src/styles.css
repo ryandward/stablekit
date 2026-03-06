@@ -1,0 +1,155 @@
+/* stablekit — layout stability toolkit for React
+ *
+ * CSS class prefix: sk-
+ * All animations use CSS custom properties for themability.
+ * Styles are auto-injected at import time (opt-out via meta tag).
+ */
+
+/* ── LayoutGroup / LayoutView ──────────────────────────────────────────────── */
+
+/* All children overlap in the same grid cell.
+   Grid auto-sizes to the largest child.
+   Views use flex-column so their content stretches to fill
+   the reserved width — the visual footprint is constant. */
+.sk-layout-group {
+  display: grid;
+}
+.sk-layout-group > * {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Inactive LayoutView hiding — belt and suspenders.
+   Primary: inline style on the View element (visibility: hidden + opacity: 0).
+   Inline styles can't be overridden by any CSS cascade — this is the
+   bulletproof layer.
+   Backup: CSS rules below catch edge cases (e.g. if inline styles are
+   stripped by a framework or test harness).
+   transition: none on descendants prevents children with transition-all
+   from animating the inherited visibility change. */
+.sk-layout-group > [inert] {
+  visibility: hidden;
+  opacity: 0;
+}
+.sk-layout-group > [inert] * {
+  transition: none;
+}
+
+/* ── SizeRatchet ───────────────────────────────────────────────────────────── */
+
+/* contain isolates internal reflow from ancestors. */
+.sk-size-ratchet {
+  contain: layout style;
+}
+
+/* ── Shimmer / Skeleton ────────────────────────────────────────────────────── */
+
+.sk-skeleton-grid {
+  display: grid;
+  gap: var(--sk-skeleton-gap, 0.75rem);
+  contain: layout style;
+}
+
+.sk-skeleton-bone {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-skeleton-bone-gap, 0.125rem);
+  padding: var(--sk-skeleton-bone-padding, 0.375rem 0.5rem);
+}
+
+.sk-shimmer-line {
+  height: 1lh;
+  border-radius: var(--sk-shimmer-radius, 0.125rem);
+  background: linear-gradient(
+    90deg,
+    var(--sk-shimmer-color, #e5e7eb) 25%,
+    var(--sk-shimmer-highlight, #f3f4f6) 50%,
+    var(--sk-shimmer-color, #e5e7eb) 75%
+  );
+  background-size: 200% 100%;
+  animation: sk-shimmer 1.5s ease-in-out infinite;
+}
+
+/* Inert ghost inside a shimmer-line — sizes the shimmer to match
+   content width exactly. Invisible and non-interactive via [inert]. */
+.sk-shimmer-line > [inert] {
+  visibility: hidden;
+}
+
+@keyframes sk-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── MediaSkeleton ─────────────────────────────────────────────────────────── */
+
+/* Loading-aware media container.
+   Reserves space via aspect-ratio (set inline by the component).
+   Child constraints enforced via React.cloneElement inline styles. */
+.sk-media {
+  overflow: hidden;
+  width: 100%;
+}
+.sk-media-shimmer {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--sk-shimmer-radius, 0.125rem);
+  background: linear-gradient(
+    90deg,
+    var(--sk-shimmer-color, #e5e7eb) 25%,
+    var(--sk-shimmer-highlight, #f3f4f6) 50%,
+    var(--sk-shimmer-color, #e5e7eb) 75%
+  );
+  background-size: 200% 100%;
+  animation: sk-shimmer 1.5s ease-in-out infinite;
+}
+
+/* ── FadeTransition ────────────────────────────────────────────────────────── */
+
+.sk-fade {
+  --sk-fade-duration: 200ms;
+}
+
+.sk-fade-entering {
+  animation: sk-fade-in var(--sk-fade-duration) ease-out;
+}
+
+.sk-fade-exiting {
+  animation: sk-fade-out var(--sk-fade-duration) ease-out forwards;
+}
+
+@keyframes sk-fade-in {
+  from { opacity: 0; max-height: 0; overflow: hidden; }
+  to   { opacity: 1; max-height: var(--sk-fade-height, 1000px); overflow: hidden; }
+}
+
+@keyframes sk-fade-out {
+  from { opacity: 1; max-height: var(--sk-fade-height, 1000px); overflow: hidden; }
+  to   { opacity: 0; max-height: 0; overflow: hidden; }
+}
+
+/* ── Loading exit ──────────────────────────────────────────────────────────── */
+
+/* Applied by LoadingBoundary during shimmer→content transition. */
+.sk-loading-exiting .sk-shimmer-line {
+  animation: sk-loading-exit var(--sk-exit-duration, 150ms) ease-out forwards;
+}
+
+@keyframes sk-loading-exit {
+  to { opacity: 0; }
+}
+
+/* ── Reduced motion ────────────────────────────────────────────────────────── */
+
+/* Disables all animations — shimmer, fade, and loading exit.
+   Layout changes still happen instantly so functionality is preserved. */
+@media (prefers-reduced-motion: reduce) {
+  .sk-fade-entering,
+  .sk-fade-exiting,
+  .sk-shimmer-line,
+  .sk-media-shimmer,
+  .sk-loading-exiting .sk-shimmer-line {
+    animation-duration: 0s !important;
+  }
+}

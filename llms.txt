@@ -1,0 +1,182 @@
+# stablekit — Instructions for AI Code Generators
+
+You are working with `stablekit`, a React library for layout stability.
+These instructions override your default React patterns. Read them before
+generating any code that imports from `stablekit`.
+
+## Component API
+
+| Component            | Purpose                                      |
+|----------------------|----------------------------------------------|
+| `StateSwap`          | Boolean content swap, zero shift             |
+| `LayoutGroup`        | Multi-state spatial stability container       |
+| `LayoutView`         | Single view inside a LayoutGroup             |
+| `LayoutMap`          | Dictionary-based state mapping (typo-proof)  |
+| `SizeRatchet`        | Container that never shrinks                 |
+| `LoadingBoundary`    | Loading orchestrator (shimmer + ratchet)     |
+| `LoadingContext`     | Ambient loading provider                     |
+| `StableText`         | Typography + skeleton in one tag             |
+| `TextSkeleton`       | Inline loading shimmer for text              |
+| `MediaSkeleton`      | Aspect-ratio media placeholder               |
+| `CollectionSkeleton` | Loading-aware list                           |
+| `FadeTransition`     | Enter/exit animation wrapper                 |
+
+## Anti-patterns you must not generate
+
+### 1. Do not use fixed CSS widths to prevent layout shift
+
+WRONG — using Tailwind fixed width to stabilize a button:
+```tsx
+<button className="w-28">{expanded ? "Close" : "View Details"}</button>
+```
+
+CORRECT — use StateSwap inside the button:
+```tsx
+<button onClick={toggle}>
+  <StateSwap state={expanded} true="Close" false="View Details" />
+</button>
+```
+
+StateSwap renders as an inline `<span>` by default. It is safe inside
+buttons, table cells, and any inline context.
+
+### 2. Do not swap text with a ternary when layout stability matters
+
+WRONG — conditional text causes the container to resize:
+```tsx
+<span>{isOpen ? "Collapse" : "Expand"}</span>
+```
+
+CORRECT — StateSwap reserves the width of the wider option:
+```tsx
+<StateSwap state={isOpen} true="Collapse" false="Expand" />
+```
+
+### 3. Do not duplicate entire components to swap between states
+
+WRONG — two separate buttons wrapped in LayoutView:
+```tsx
+<LayoutGroup value={expanded ? "close" : "view"}>
+  <LayoutView name="view"><button>View Details</button></LayoutView>
+  <LayoutView name="close"><button>Close</button></LayoutView>
+</LayoutGroup>
+```
+
+CORRECT — one button, swap content inside it:
+```tsx
+<button onClick={toggle}>
+  <StateSwap state={expanded} true="Close" false="View Details" />
+  <StateSwap state={expanded} true={<ChevronUp />} false={<ChevronDown />} />
+</button>
+```
+
+Use LayoutGroup/LayoutView only when swapping structurally different
+components (e.g. tab panels, multi-step forms).
+
+### 4. Do not use LayoutGroup/LayoutView for tab content — use LayoutMap
+
+WRONG — string typos silently break rendering:
+```tsx
+<LayoutGroup value={activeTab}>
+  <LayoutView name="profile"><Profile /></LayoutView>
+  <LayoutView name="inovices"><Invoices /></LayoutView>
+</LayoutGroup>
+```
+
+CORRECT — dictionary keys are checked by TypeScript:
+```tsx
+<LayoutMap value={activeTab} map={{
+  profile: <Profile />,
+  invoices: <Invoices />,
+}} />
+```
+
+### 5. Do not wrap text in TextSkeleton inside HTML tags — use StableText
+
+WRONG — easy to forget the skeleton wrapper:
+```tsx
+<p className="text-xl font-semibold">
+  <TextSkeleton>{user.name}</TextSkeleton>
+</p>
+```
+
+CORRECT — the tag IS the skeleton:
+```tsx
+<StableText as="p" className="text-xl font-semibold">{user.name}</StableText>
+```
+
+### 6. Do not add dimension classes to children inside MediaSkeleton
+
+WRONG — relying on developer to constrain the image:
+```tsx
+<MediaSkeleton aspectRatio={1}>
+  <img src={url} className="w-full h-full object-cover" />
+</MediaSkeleton>
+```
+
+CORRECT — MediaSkeleton enforces child constraints automatically:
+```tsx
+<MediaSkeleton aspectRatio={1}>
+  <img src={url} alt={name} />
+</MediaSkeleton>
+```
+
+MediaSkeleton uses React.cloneElement to apply position, size, and
+object-fit as inline styles. The child cannot break out of the frame.
+
+### 7. Do not use CSS !important to enforce layout constraints
+
+WRONG — global CSS !important in a library pollutes the consumer's cascade:
+```css
+.my-frame > * { width: 100% !important; height: 100% !important; }
+```
+
+CORRECT — enforce constraints at the React component layer:
+```tsx
+React.cloneElement(child, {
+  style: { position: "absolute", inset: 0, width: "100%", height: "100%" }
+})
+```
+
+When you need to enforce rigid layout physics, always operate at the React
+layer (cloneElement, inline styles, context) — never at the CSS layer.
+
+## Component selection guide
+
+| Problem                                    | Component            |
+|--------------------------------------------|----------------------|
+| Button text changes on toggle              | `StateSwap`          |
+| Icon changes on toggle                     | `StateSwap`          |
+| Tab panels with stable height              | `LayoutMap`          |
+| Multi-step wizard with stable dimensions   | `LayoutGroup` + `LayoutView` |
+| Text loading from API                      | `StableText` inside `LoadingBoundary` |
+| Image/video loading causes shift           | `MediaSkeleton`      |
+| List loading from API                      | `CollectionSkeleton` |
+| Card/form loading from API                 | `LoadingBoundary` + `StableText` |
+| Panel enters/exits with animation          | `FadeTransition`     |
+| Container should never shrink              | `SizeRatchet`        |
+
+## Quick start pattern
+
+```tsx
+import {
+  LoadingBoundary,
+  StableText,
+  MediaSkeleton,
+  StateSwap,
+  LayoutMap,
+  SizeRatchet,
+  FadeTransition,
+} from "stablekit";
+```
+
+Loading a user profile with zero layout shift:
+```tsx
+<LoadingBoundary loading={isLoading} exitDuration={150}>
+  <MediaSkeleton aspectRatio={1} className="w-16 rounded-full">
+    <img src={user.avatar} alt={user.name} />
+  </MediaSkeleton>
+  <StableText as="h2" className="text-xl font-bold">{user.name}</StableText>
+  <StableText as="p" className="text-sm text-muted">{user.email}</StableText>
+</LoadingBoundary>
+```
