@@ -7,9 +7,10 @@ import {
   type HTMLAttributes,
   type ElementType,
 } from "react";
-import { AxisContext, ActiveValueContext, FocusHandoffContext } from "./layout-group";
+import { AxisContext, ActiveValueContext, FocusHandoffContext, type ActiveValueContextType } from "./layout-group";
 import { injectStyles } from "../internal/inject-styles";
 import { mergeRefs } from "../internal/merge-refs";
+import { __DEV__ } from "../internal/dev";
 
 export interface LayoutViewProps extends HTMLAttributes<HTMLElement> {
   /**
@@ -48,9 +49,18 @@ export const LayoutView = forwardRef<HTMLElement, LayoutViewProps>(
     useInsertionEffect(injectStyles, []);
 
     useContext(AxisContext);
-    const activeValue = useContext(ActiveValueContext);
+    const rawActiveValue: ActiveValueContextType = useContext(ActiveValueContext);
     const focusCtx = useContext(FocusHandoffContext);
 
+    if (__DEV__) {
+      if (name != null && typeof rawActiveValue === "symbol") {
+        throw new Error(
+          "StableKit: <LayoutView> with a 'name' prop must be rendered inside a <LayoutGroup> or <LayoutMap>."
+        );
+      }
+    }
+
+    const activeValue = typeof rawActiveValue === "symbol" ? undefined : rawActiveValue;
     const isActive = active ?? (name != null ? name === activeValue : true);
 
     const internalRef = useRef<HTMLElement>(null);

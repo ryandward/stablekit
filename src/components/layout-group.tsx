@@ -10,12 +10,21 @@ import {
 } from "react";
 import { injectStyles } from "../internal/inject-styles";
 import { mergeRefs } from "../internal/merge-refs";
+import { __DEV__ } from "../internal/dev";
 
 export type Axis = "width" | "height" | "both";
 
 export const AxisContext = createContext<Axis>("both");
 
-export const ActiveValueContext = createContext<string | undefined>(undefined);
+/**
+ * Sentinel default — distinguishes "no LayoutGroup parent" from
+ * "LayoutGroup parent with value={undefined}".
+ */
+const NO_PROVIDER = Symbol("sk-no-layout-group");
+
+export type ActiveValueContextType = string | undefined | typeof NO_PROVIDER;
+
+export const ActiveValueContext = createContext<ActiveValueContextType>(NO_PROVIDER);
 
 /** Shared between LayoutGroup and LayoutView for focus handoff on inert swap. */
 export interface FocusHandoffValue {
@@ -67,6 +76,15 @@ export interface LayoutGroupProps extends HTMLAttributes<HTMLElement> {
 export const LayoutGroup = forwardRef<HTMLElement, LayoutGroupProps>(
   function LayoutGroup({ axis = "both", value, as: Tag = "div", className, style, children, ...props }, ref) {
     useInsertionEffect(injectStyles, []);
+
+    if (__DEV__) {
+      if (value === undefined) {
+        console.warn(
+          "StableKit: <LayoutGroup> rendered without a 'value' prop. " +
+          "All named <LayoutView> children will default to active, which may cause overlapping layouts."
+        );
+      }
+    }
 
     const internalRef = useRef<HTMLElement>(null);
     const hadFocusRef = useRef(false);

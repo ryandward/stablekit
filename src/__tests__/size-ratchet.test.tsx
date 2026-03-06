@@ -23,4 +23,11 @@ describe("SizeRatchet", () => {
     const { container } = render(<SizeRatchet><p>Inner</p></SizeRatchet>);
     expect(container.querySelector("p")?.textContent).toBe("Inner");
   });
+
+  it("accepts resetKey prop without error", () => {
+    const { rerender } = render(<SizeRatchet resetKey="v1">Content A</SizeRatchet>);
+    // Changing resetKey should not throw
+    rerender(<SizeRatchet resetKey="v2">Content B</SizeRatchet>);
+    expect(true).toBe(true);
+  });
 });

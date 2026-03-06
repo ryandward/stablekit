@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { LayoutGroup, LayoutView } from "../index";
 
 describe("LayoutGroup + LayoutView", () => {
@@ -87,11 +87,38 @@ describe("LayoutGroup + LayoutView", () => {
   });
 
   it("LayoutView defaults to active when no name and no value", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     render(
       <LayoutGroup>
         <LayoutView><p>Always Active</p></LayoutView>
       </LayoutGroup>
     );
     expect(screen.getByText("Always Active").closest("[inert]")).toBeNull();
+    warnSpy.mockRestore();
+  });
+
+  it("dev-mode: warns when LayoutGroup has no value prop", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    render(
+      <LayoutGroup>
+        <LayoutView name="a">A</LayoutView>
+      </LayoutGroup>
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("rendered without a 'value' prop")
+    );
+    warnSpy.mockRestore();
+  });
+
+  it("dev-mode: throws when LayoutView with name is outside LayoutGroup", () => {
+    expect(() => {
+      render(<LayoutView name="orphan">Orphan</LayoutView>);
+    }).toThrow("must be rendered inside a <LayoutGroup> or <LayoutMap>");
+  });
+
+  it("dev-mode: does NOT throw for LayoutView without name outside LayoutGroup", () => {
+    expect(() => {
+      render(<LayoutView>Standalone</LayoutView>);
+    }).not.toThrow();
   });
 });

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, type CSSProperties } from "react";
+import { useState, useCallback, useEffect, useRef, type CSSProperties } from "react";
 import type { Axis } from "../components/layout-group";
 
 /** Ratchet starts below any possible observation so the first resize always wins. */
@@ -7,6 +7,8 @@ const RATCHET_FLOOR = -Infinity;
 interface UseStableSlotOptions {
   /** Which axis to ratchet. Default: "both". */
   axis?: Axis;
+  /** When this key changes, the ratchet floor resets so the container can shrink to its new intrinsic size. */
+  resetKey?: unknown;
 }
 
 interface UseStableSlotReturn {
@@ -25,10 +27,19 @@ interface UseStableSlotReturn {
 export function useStableSlot(
   options: UseStableSlotOptions = {}
 ): UseStableSlotReturn {
-  const { axis = "both" } = options;
+  const { axis = "both", resetKey } = options;
   const [style, setStyle] = useState<CSSProperties>({});
   const maxRef = useRef({ w: RATCHET_FLOOR, h: RATCHET_FLOOR });
   const observerRef = useRef<ResizeObserver | null>(null);
+  const prevResetKeyRef = useRef(resetKey);
+
+  useEffect(() => {
+    if (prevResetKeyRef.current !== resetKey) {
+      prevResetKeyRef.current = resetKey;
+      maxRef.current = { w: RATCHET_FLOOR, h: RATCHET_FLOOR };
+      setStyle({});
+    }
+  }, [resetKey]);
 
   const ref = useCallback(
     (el: HTMLElement | null) => {

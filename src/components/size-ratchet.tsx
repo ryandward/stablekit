@@ -7,6 +7,8 @@ import type { Axis } from "./layout-group";
 export interface SizeRatchetProps extends HTMLAttributes<HTMLElement> {
   /** Which axis to ratchet. Default: "height". */
   axis?: Axis;
+  /** When this key changes, the ratchet floor resets so the container can shrink to its new intrinsic size. */
+  resetKey?: unknown;
   /** HTML element to render. Default: "div". */
   as?: ElementType;
 }
@@ -28,9 +30,9 @@ export interface SizeRatchetProps extends HTMLAttributes<HTMLElement> {
  * ```
  */
 export const SizeRatchet = forwardRef<HTMLElement, SizeRatchetProps>(
-  function SizeRatchet({ axis = "height", as: Tag = "div", className, style, children, ...props }, fwdRef) {
+  function SizeRatchet({ axis = "height", resetKey, as: Tag = "div", className, style, children, ...props }, fwdRef) {
     useInsertionEffect(injectStyles, []);
-    const { ref: ratchetRef, style: ratchetStyle } = useStableSlot({ axis });
+    const { ref: ratchetRef, style: ratchetStyle } = useStableSlot({ axis, resetKey });
 
     const merged = className
       ? `sk-size-ratchet ${className}`
