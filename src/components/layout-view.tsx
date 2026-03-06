@@ -10,7 +10,7 @@ import {
 import { AxisContext, ActiveValueContext, FocusHandoffContext, type ActiveValueContextType } from "./layout-group";
 import { injectStyles } from "../internal/inject-styles";
 import { mergeRefs } from "../internal/merge-refs";
-import { __DEV__ } from "../internal/dev";
+import { invariant } from "../internal/invariant";
 
 export interface LayoutViewProps extends HTMLAttributes<HTMLElement> {
   /**
@@ -52,13 +52,10 @@ export const LayoutView = forwardRef<HTMLElement, LayoutViewProps>(
     const rawActiveValue: ActiveValueContextType = useContext(ActiveValueContext);
     const focusCtx = useContext(FocusHandoffContext);
 
-    if (__DEV__) {
-      if (name != null && typeof rawActiveValue === "symbol") {
-        throw new Error(
-          "StableKit: <LayoutView> with a 'name' prop must be rendered inside a <LayoutGroup> or <LayoutMap>."
-        );
-      }
-    }
+    invariant(
+      !(name != null && typeof rawActiveValue === "symbol"),
+      "<LayoutView> with a 'name' prop must be rendered inside a <LayoutGroup> or <LayoutMap>."
+    );
 
     const activeValue = typeof rawActiveValue === "symbol" ? undefined : rawActiveValue;
     const isActive = active ?? (name != null ? name === activeValue : true);

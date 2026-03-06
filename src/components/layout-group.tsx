@@ -10,7 +10,7 @@ import {
 } from "react";
 import { injectStyles } from "../internal/inject-styles";
 import { mergeRefs } from "../internal/merge-refs";
-import { __DEV__ } from "../internal/dev";
+import { warning } from "../internal/invariant";
 
 export type Axis = "width" | "height" | "both";
 
@@ -77,14 +77,10 @@ export const LayoutGroup = forwardRef<HTMLElement, LayoutGroupProps>(
   function LayoutGroup({ axis = "both", value, as: Tag = "div", className, style, children, ...props }, ref) {
     useInsertionEffect(injectStyles, []);
 
-    if (__DEV__) {
-      if (value === undefined) {
-        console.warn(
-          "StableKit: <LayoutGroup> rendered without a 'value' prop. " +
-          "All named <LayoutView> children will default to active, which may cause overlapping layouts."
-        );
-      }
-    }
+    warning(
+      value !== undefined,
+      "<LayoutGroup> rendered without a 'value' prop. All named <LayoutView> children will default to active, which may cause overlapping layouts."
+    );
 
     const internalRef = useRef<HTMLElement>(null);
     const hadFocusRef = useRef(false);
