@@ -25,42 +25,22 @@ function NaiveProfile({ customer }: { customer: Customer }) {
   const [activeTab, setActiveTab] = useState<"profile" | "invoices">("profile");
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      setLoading(false);
-    }, 800);
+    const t = setTimeout(() => setLoading(false), 800);
     return () => clearTimeout(t);
   }, []);
 
-  // Avatar loads 400ms AFTER the "data" loads -- text appears, then avatar pops in
   useEffect(() => {
     if (loading) return;
-    const t = setTimeout(() => {
-      setAvatarSrc(customer.avatar);
-    }, 400);
+    const t = setTimeout(() => setAvatarSrc(customer.avatar), 400);
     return () => clearTimeout(t);
   }, [loading, customer.avatar]);
 
   if (loading) {
     return (
       <div className="p-5 pt-4 flex items-center justify-center">
-        <svg
-          className="animate-spin size-8 text-muted-foreground"
-          viewBox="0 0 24 24"
-          fill="none"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          />
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-          />
+        <svg className="animate-spin size-8 text-muted-foreground" viewBox="0 0 24 24" fill="none">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
       </div>
     );
@@ -68,15 +48,8 @@ function NaiveProfile({ customer }: { customer: Customer }) {
 
   return (
     <div className="p-5 pt-4">
-      {/* Top section */}
       <div className="flex gap-5">
-        {avatarSrc && (
-          <img
-            src={avatarSrc}
-            alt={customer.name}
-            className="rounded-full"
-          />
-        )}
+        {avatarSrc && <img src={avatarSrc} alt={customer.name} className="rounded-full" />}
         <div className="min-w-0">
           <p className="text-xl font-semibold">{customer.name}</p>
           <p className="text-sm text-muted-foreground">{customer.title}</p>
@@ -84,42 +57,12 @@ function NaiveProfile({ customer }: { customer: Customer }) {
           <p className="text-sm text-brand">{customer.email}</p>
         </div>
       </div>
-
-      {/* Tabs -- unmount/remount on switch */}
       <div className="mt-5">
-        <div className="flex gap-4 border-b border-border">
-          <button
-            type="button"
-            onClick={() => setActiveTab("profile")}
-            className={cn(
-              "pb-2 text-sm font-medium transition-colors",
-              activeTab === "profile"
-                ? "border-b-2 border-brand text-brand"
-                : "text-muted-foreground hover:text-card-foreground",
-            )}
-          >
-            Profile
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("invoices")}
-            className={cn(
-              "pb-2 text-sm font-medium transition-colors",
-              activeTab === "invoices"
-                ? "border-b-2 border-brand text-brand"
-                : "text-muted-foreground hover:text-card-foreground",
-            )}
-          >
-            Invoices
-          </button>
-        </div>
-
+        <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
         <div className="mt-4">
-          {activeTab === "profile" ? (
-            <ProfileContent customer={customer} />
-          ) : (
-            <InvoiceContent customer={customer} />
-          )}
+          {activeTab === "profile"
+            ? <ProfileContent customer={customer} />
+            : <InvoiceContent customer={customer} />}
         </div>
       </div>
     </div>
@@ -135,16 +78,13 @@ function StableProfile({ customer }: { customer: Customer }) {
   const [activeTab, setActiveTab] = useState<"profile" | "invoices">("profile");
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      setLoading(false);
-    }, 800);
+    const t = setTimeout(() => setLoading(false), 800);
     return () => clearTimeout(t);
   }, []);
 
   return (
     <LoadingBoundary loading={loading} exitDuration={150}>
       <div className="p-5 pt-4">
-        {/* Top section */}
         <div className="flex gap-5">
           <MediaSkeleton
             aspectRatio={1}
@@ -160,36 +100,8 @@ function StableProfile({ customer }: { customer: Customer }) {
             <StableText as="p" className="text-sm text-brand">{customer.email}</StableText>
           </div>
         </div>
-
-        {/* Tabs -- both stay mounted via LayoutMap */}
         <div className="mt-5">
-          <div className="flex gap-4 border-b border-border">
-            <button
-              type="button"
-              onClick={() => setActiveTab("profile")}
-              className={cn(
-                "pb-2 text-sm font-medium transition-colors",
-                activeTab === "profile"
-                  ? "border-b-2 border-brand text-brand"
-                  : "text-muted-foreground hover:text-card-foreground",
-              )}
-            >
-              Profile
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("invoices")}
-              className={cn(
-                "pb-2 text-sm font-medium transition-colors",
-                activeTab === "invoices"
-                  ? "border-b-2 border-brand text-brand"
-                  : "text-muted-foreground hover:text-card-foreground",
-              )}
-            >
-              Invoices
-            </button>
-          </div>
-
+          <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
           <div className="mt-4">
             <LayoutMap
               value={activeTab}
@@ -206,8 +118,41 @@ function StableProfile({ customer }: { customer: Customer }) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Shared tab content                                                         */
+/*  Shared UI                                                                  */
 /* -------------------------------------------------------------------------- */
+
+type Tab = "profile" | "invoices";
+
+function TabBar({ activeTab, onTabChange }: { activeTab: Tab; onTabChange: (tab: Tab) => void }) {
+  return (
+    <div className="flex gap-4 border-b border-border">
+      <button
+        type="button"
+        onClick={() => onTabChange("profile")}
+        className={cn(
+          "pb-2 text-sm font-medium transition-colors",
+          activeTab === "profile"
+            ? "border-b-2 border-brand text-brand"
+            : "text-muted-foreground hover:text-card-foreground",
+        )}
+      >
+        Profile
+      </button>
+      <button
+        type="button"
+        onClick={() => onTabChange("invoices")}
+        className={cn(
+          "pb-2 text-sm font-medium transition-colors",
+          activeTab === "invoices"
+            ? "border-b-2 border-brand text-brand"
+            : "text-muted-foreground hover:text-card-foreground",
+        )}
+      >
+        Invoices
+      </button>
+    </div>
+  );
+}
 
 function ProfileContent({ customer }: { customer: Customer }) {
   const statusColors: Record<string, string> = {
