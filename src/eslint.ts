@@ -30,6 +30,12 @@ export interface ArchitectureLintOptions {
    *  e.g. ["intent", "variant"] — bans intent={x ? "a" : "b"} */
   variantProps?: string[];
 
+  /** Ban all Tailwind color palette utilities in className.
+   *  Catches bg-red-500, text-green-600, border-cyan-400, etc.
+   *  When true, colors must live in CSS — not in component classNames.
+   *  @default false */
+  banColorUtilities?: boolean;
+
   /** Glob patterns for files to lint.
    *  @default ["src/components/**\/*.{tsx,jsx}"] */
   files?: string[];
@@ -39,10 +45,14 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
   const {
     stateTokens,
     variantProps = [],
+    banColorUtilities = false,
     files = ["src/components/**/*.{tsx,jsx}"],
   } = options;
 
   const tokenPattern = stateTokens.join("|");
+
+  const twColors = "red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|slate|gray|zinc|neutral|stone|white|black";
+  const twPrefixes = "text|bg|border|ring|shadow|outline|accent|fill|stroke|from|to|via|divide|decoration";
 
   return {
     files,
@@ -165,6 +175,18 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
           message:
             "Tailwind !important modifier in className. !important breaks the cascade — use specificity or data-attributes.",
         },
+
+        // --- 2d. Tailwind color utilities in className ---
+
+        ...(banColorUtilities
+          ? [
+              {
+                selector: `Literal[value=/(?:^|\\s)(?:${twPrefixes})-(?:${twColors})(?:-\\d+)?(?:\\/\\d+)?(?:\\s|$)/]`,
+                message:
+                  "Tailwind color utility in className. Colors belong in CSS — use a CSS class with a custom property or data-attribute selector.",
+              },
+            ]
+          : []),
 
         // --- 3. Ternaries on variant props (from createPrimitive) ---
 

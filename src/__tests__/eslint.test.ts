@@ -559,3 +559,130 @@ describe("additional color properties in style props", () => {
     );
   });
 });
+
+// ── Gap 14: Tailwind color utilities in className ─────────
+
+describe("Tailwind color utilities in className (banColorUtilities)", () => {
+  it("catches bg-red-500", () => {
+    expectError(
+      `<div className="bg-red-500" />`,
+      "Tailwind color utility",
+      { stateTokens: [], banColorUtilities: true },
+    );
+  });
+
+  it("catches text-green-600", () => {
+    expectError(
+      `<span className="text-green-600" />`,
+      "Tailwind color utility",
+      { stateTokens: [], banColorUtilities: true },
+    );
+  });
+
+  it("catches border-cyan-400", () => {
+    expectError(
+      `<div className="border-cyan-400" />`,
+      "Tailwind color utility",
+      { stateTokens: [], banColorUtilities: true },
+    );
+  });
+
+  it("catches ring-indigo-500", () => {
+    expectError(
+      `<button className="ring-indigo-500" />`,
+      "Tailwind color utility",
+      { stateTokens: [], banColorUtilities: true },
+    );
+  });
+
+  it("catches from-purple-500 (gradient)", () => {
+    expectError(
+      `<div className="from-purple-500" />`,
+      "Tailwind color utility",
+      { stateTokens: [], banColorUtilities: true },
+    );
+  });
+
+  it("catches fill-rose-400 (SVG)", () => {
+    expectError(
+      `<svg className="fill-rose-400" />`,
+      "Tailwind color utility",
+      { stateTokens: [], banColorUtilities: true },
+    );
+  });
+
+  it("catches text-slate-700 (neutral palette)", () => {
+    expectError(
+      `<p className="text-slate-700" />`,
+      "Tailwind color utility",
+      { stateTokens: [], banColorUtilities: true },
+    );
+  });
+
+  it("catches divide-gray-200", () => {
+    expectError(
+      `<div className="divide-gray-200" />`,
+      "Tailwind color utility",
+      { stateTokens: [], banColorUtilities: true },
+    );
+  });
+
+  it("catches color with opacity modifier", () => {
+    expectError(
+      `<div className="bg-blue-500/50" />`,
+      "Tailwind color utility",
+      { stateTokens: [], banColorUtilities: true },
+    );
+  });
+
+  it("catches text-white", () => {
+    expectError(
+      `<span className="text-white" />`,
+      "Tailwind color utility",
+      { stateTokens: [], banColorUtilities: true },
+    );
+  });
+
+  it("catches bg-black", () => {
+    expectError(
+      `<div className="bg-black" />`,
+      "Tailwind color utility",
+      { stateTokens: [], banColorUtilities: true },
+    );
+  });
+
+  it("allows layout utilities", () => {
+    expectClean(
+      `<div className="flex gap-3 p-4 items-center" />`,
+      { stateTokens: [], banColorUtilities: true },
+    );
+  });
+
+  it("allows text-sm (not a color)", () => {
+    expectClean(
+      `<span className="text-sm font-bold" />`,
+      { stateTokens: [], banColorUtilities: true },
+    );
+  });
+
+  it("allows text-center (not a color)", () => {
+    expectClean(
+      `<p className="text-center" />`,
+      { stateTokens: [], banColorUtilities: true },
+    );
+  });
+
+  it("allows text-balance (not a color)", () => {
+    expectClean(
+      `<p className="text-balance" />`,
+      { stateTokens: [], banColorUtilities: true },
+    );
+  });
+
+  it("does not flag colors when banColorUtilities is off", () => {
+    expectClean(
+      `<div className="bg-red-500" />`,
+      { stateTokens: [] },
+    );
+  });
+});
