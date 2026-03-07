@@ -3,7 +3,7 @@
  *
  * Enforces the Structure → Presentation boundary on the CSS side.
  *
- * Three rules:
+ * Four rules:
  *
  * 1. Don't target child elements by tag name for visual properties.
  *    `& svg { color: green }` is wrong — set color on the container
@@ -17,6 +17,10 @@
  *    back from Presentation into Structure. Functional tokens belong
  *    in scoped selectors like `.badge[data-status="paid"]`, not in
  *    utilities that can spread via @apply or className.
+ *
+ * 4. Don't set color on descendants inside data-attribute selectors.
+ *    `.card[data-status="error"] .icon { color: red }` is wrong —
+ *    set color on the container and let children inherit via currentColor.
  */
 
 export interface StyleLintOptions {
@@ -35,6 +39,7 @@ export interface StyleLintOptions {
 }
 
 const pluginRuleName = "stablekit/no-functional-in-utility";
+const descendantColorRuleName = "stablekit/no-descendant-color-in-state";
 
 /**
  * Stylelint plugin that bans functional color tokens inside @utility blocks.
@@ -73,6 +78,62 @@ function createFunctionalTokenPlugin(prefixes: string[]) {
   };
 }
 
+/**
+ * Stylelint plugin that bans setting `color` on descendant selectors
+ * inside data-attribute state contexts.
+ *
+ * `.card[data-status="error"] .icon { color: red }` is wrong —
+ * set color on `.card[data-status="error"]` and let .icon inherit
+ * via currentColor.
+ */
+function createDescendantColorPlugin() {
+  // Matches selectors like `.foo[data-status="x"] .bar` —
+  // a data-attribute selector followed by a space (descendant combinator)
+  // and then another selector segment.
+  const dataAttrWithDescendant = /\[data-[^\]]+\]\s+[.#\w]/;
+
+  // @apply params that set color: text-*, bg-*, border-*-color utilities
+  const colorApplyPattern = /\btext-(?!xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl|left|right|center|justify|wrap|nowrap|ellipsis|clip|truncate)\w/;
+
+  const message = `Setting color on a descendant inside a data-attribute selector. Set color on the [data-*] container and let children inherit via currentColor.`;
+
+  const rule = (enabled: boolean) => {
+    return (
+      root: {
+        walkRules: (cb: (rule: {
+          selector: string;
+          walkDecls: (prop: string, cb: (decl: { source?: unknown }) => void) => void;
+          walkAtRules: (name: string, cb: (atRule: { params: string; source?: unknown }) => void) => void;
+        }) => void) => void;
+      },
+      result: { warn: (message: string, options: { node: unknown }) => void },
+    ) => {
+      if (!enabled) return;
+
+      root.walkRules((ruleNode) => {
+        if (!dataAttrWithDescendant.test(ruleNode.selector)) return;
+
+        // Catch `color:` declarations
+        ruleNode.walkDecls("color", (decl) => {
+          result.warn(message, { node: decl });
+        });
+
+        // Catch `@apply text-*` (color utilities)
+        ruleNode.walkAtRules("apply", (atRule) => {
+          if (colorApplyPattern.test(atRule.params)) {
+            result.warn(message, { node: atRule });
+          }
+        });
+      });
+    };
+  };
+
+  return {
+    ruleName: descendantColorRuleName,
+    rule,
+  };
+}
+
 export function createStyleLint(options: StyleLintOptions = {}) {
   const {
     ignoreTypes = ["html", "body"],
@@ -80,26 +141,30 @@ export function createStyleLint(options: StyleLintOptions = {}) {
     files = ["src/**/*.css"],
   } = options;
 
-  const config: Record<string, unknown> = {
-    files,
-    rules: {
-      // Ban element selectors — use classes and data-attributes instead.
-      "selector-max-type": [
-        0,
-        {
-          ignoreTypes,
-        },
-      ],
+  const plugins: unknown[] = [createDescendantColorPlugin()];
+  if (functionalTokens.length > 0) {
+    plugins.push(createFunctionalTokenPlugin(functionalTokens));
+  }
 
-      // !important breaks the cascade and fights the architecture.
-      "declaration-no-important": true,
-    },
+  const rules: Record<string, unknown> = {
+    // Ban element selectors — use classes and data-attributes instead.
+    "selector-max-type": [
+      0,
+      {
+        ignoreTypes,
+      },
+    ],
+
+    // !important breaks the cascade and fights the architecture.
+    "declaration-no-important": true,
+
+    // Ban color on descendants inside data-attribute selectors.
+    [descendantColorRuleName]: true,
   };
 
   if (functionalTokens.length > 0) {
-    config.plugins = [createFunctionalTokenPlugin(functionalTokens)];
-    (config.rules as Record<string, unknown>)[pluginRuleName] = true;
+    rules[pluginRuleName] = true;
   }
 
-  return config;
+  return { files, plugins, rules };
 }

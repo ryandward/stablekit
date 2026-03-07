@@ -218,3 +218,344 @@ describe("className ternaries", () => {
     expectClean(`<span className={cx("base", "layout")} />`);
   });
 });
+
+// ── Gap 5: className logical AND (same as ternary) ────────
+
+describe("className logical AND", () => {
+  it("catches isActive && 'text-ocean' inside className", () => {
+    expectError(
+      `<span className={cn("base", isActive && "text-ocean")} />`,
+      "Conditional className",
+    );
+  });
+
+  it("catches status check with logical AND", () => {
+    expectError(
+      `<span className={cn("base", status === "paid" && "text-green")} />`,
+      "Conditional className",
+    );
+  });
+
+  it("catches logical AND in template literal className", () => {
+    expectError(
+      `<span className={\`base \${isOpen && "expanded"}\`} />`,
+      "Conditional className",
+    );
+  });
+});
+
+// ── Gap 6: Visual state properties in style props ─────────
+
+describe("visual state properties in style props", () => {
+  it("catches style={{ opacity: 0.5 }}", () => {
+    expectError(
+      `<div style={{ opacity: 0.5 }} />`,
+      "Visual state property",
+    );
+  });
+
+  it("catches style={{ visibility: 'hidden' }}", () => {
+    expectError(
+      `<div style={{ visibility: "hidden" }} />`,
+      "Visual state property",
+    );
+  });
+
+  it("catches style={{ transition: 'all 0.3s' }}", () => {
+    expectError(
+      `<div style={{ transition: "all 0.3s" }} />`,
+      "Visual state property",
+    );
+  });
+
+  it("catches style={{ pointerEvents: 'none' }}", () => {
+    expectError(
+      `<div style={{ pointerEvents: "none" }} />`,
+      "Visual state property",
+    );
+  });
+
+  it("allows style={{ width: 100 }}", () => {
+    expectClean(`<div style={{ width: 100 }} />`);
+  });
+
+  it("allows style={{ transform: 'scale(1.1)' }}", () => {
+    expectClean(`<div style={{ transform: "scale(1.1)" }} />`);
+  });
+});
+
+// ── Gap 7: z-index magic numbers ──────────────────────────
+
+describe("z-index magic numbers", () => {
+  it("catches z-[999] in className", () => {
+    expectError(
+      `<div className="z-[999]" />`,
+      "z-index",
+    );
+  });
+
+  it("catches z-[50] in className", () => {
+    expectError(
+      `<div className="z-[50]" />`,
+      "z-index",
+    );
+  });
+
+  it("allows named z-index like z-10", () => {
+    expectClean(`<div className="z-10" />`);
+  });
+});
+
+// ── Gap 8: cx/cn object syntax ────────────────────────────
+
+describe("cx/cn object syntax in className", () => {
+  it("catches cx({ 'text-green': isPaid })", () => {
+    expectError(
+      `<span className={cx({ "text-green": isPaid })} />`,
+      "Conditional className",
+    );
+  });
+
+  it("catches cn({ 'font-bold': isActive, 'text-red': isError })", () => {
+    expectError(
+      `<span className={cn({ "font-bold": isActive, "text-red": isError })} />`,
+      "Conditional className",
+    );
+  });
+
+  it("allows cx() without object syntax", () => {
+    expectClean(`<span className={cx("base", "layout")} />`);
+  });
+});
+
+// ── Gap 9: !important in Tailwind className ───────────────
+
+describe("!important in Tailwind className", () => {
+  it("catches !text-red-500 in className", () => {
+    expectError(
+      `<span className="!text-red-500" />`,
+      "!important",
+    );
+  });
+
+  it("catches !font-bold after other classes", () => {
+    expectError(
+      `<span className="base !font-bold" />`,
+      "!important",
+    );
+  });
+
+  it("catches !opacity-0 in className", () => {
+    expectError(
+      `<span className="!opacity-0" />`,
+      "!important",
+    );
+  });
+
+  it("catches !hidden in className", () => {
+    expectError(
+      `<span className="!hidden" />`,
+      "!important",
+    );
+  });
+
+  it("allows normal classes without !", () => {
+    expectClean(`<span className="text-red-500 font-bold" />`);
+  });
+});
+
+// ── Gap 10: Negative margin magic numbers ─────────────────
+
+describe("negative margin magic numbers", () => {
+  it("catches m-[-4px] in className", () => {
+    expectError(
+      `<div className="m-[-4px]" />`,
+      "Negative margin",
+    );
+  });
+
+  it("catches -mt-[8px] in className", () => {
+    expectError(
+      `<div className="-mt-[8px]" />`,
+      "Negative margin",
+    );
+  });
+
+  it("catches mx-[-12px] in className", () => {
+    expectError(
+      `<div className="mx-[-12px]" />`,
+      "Negative margin",
+    );
+  });
+
+  it("allows standard negative margins like -m-4", () => {
+    expectClean(`<div className="-m-4" />`);
+  });
+
+  it("allows positive margin like m-4", () => {
+    expectClean(`<div className="m-4" />`);
+  });
+});
+
+// ── Gap 11: Arbitrary width/height pixel values ───────────
+
+describe("arbitrary width/height pixel values", () => {
+  it("catches w-[347px] in className", () => {
+    expectError(
+      `<div className="w-[347px]" />`,
+      "pixel dimension",
+    );
+  });
+
+  it("catches h-[200px] in className", () => {
+    expectError(
+      `<div className="h-[200px]" />`,
+      "pixel dimension",
+    );
+  });
+
+  it("catches min-w-[500px] in className", () => {
+    expectError(
+      `<div className="min-w-[500px]" />`,
+      "pixel dimension",
+    );
+  });
+
+  it("catches max-h-[300px] in className", () => {
+    expectError(
+      `<div className="max-h-[300px]" />`,
+      "pixel dimension",
+    );
+  });
+
+  it("allows named width like w-full", () => {
+    expectClean(`<div className="w-full" />`);
+  });
+
+  it("allows percentage widths like w-[50%]", () => {
+    expectClean(`<div className="w-[50%]" />`);
+  });
+});
+
+// ── Gap 12: Catch-all arbitrary magic numbers ─────────────
+
+describe("catch-all arbitrary magic numbers", () => {
+  it("catches rounded-[3px]", () => {
+    expectError(
+      `<div className="rounded-[3px]" />`,
+      "magic number",
+    );
+  });
+
+  it("catches border-l-[3px]", () => {
+    expectError(
+      `<div className="border-l-[3px]" />`,
+      "magic number",
+    );
+  });
+
+  it("catches gap-[12px]", () => {
+    expectError(
+      `<div className="gap-[12px]" />`,
+      "magic number",
+    );
+  });
+
+  it("catches p-[7px]", () => {
+    expectError(
+      `<div className="p-[7px]" />`,
+      "magic number",
+    );
+  });
+
+  it("catches leading-[18px]", () => {
+    expectError(
+      `<div className="leading-[18px]" />`,
+      "magic number",
+    );
+  });
+
+  it("catches pixel values inside complex bracket syntax", () => {
+    expectError(
+      `<div className="grid-cols-[1fr_55px_35px]" />`,
+      "magic number",
+    );
+  });
+
+  it("catches leading-[0.95] unitless magic number", () => {
+    expectError(
+      `<div className="leading-[0.95]" />`,
+      "magic number",
+    );
+  });
+
+  it("catches leading-[1.65] unitless magic number", () => {
+    expectError(
+      `<div className="leading-[1.65]" />`,
+      "magic number",
+    );
+  });
+
+  it("catches tracking-[0.12em]", () => {
+    expectError(
+      `<div className="tracking-[0.12em]" />`,
+      "magic number",
+    );
+  });
+
+  it("catches tracking-[-0.04em]", () => {
+    expectError(
+      `<div className="tracking-[-0.04em]" />`,
+      "magic number",
+    );
+  });
+
+  it("catches rem values like p-[0.75rem]", () => {
+    expectError(
+      `<div className="p-[0.75rem]" />`,
+      "magic number",
+    );
+  });
+
+  it("allows calc() expressions", () => {
+    expectClean(`<div className="w-[calc(50%-4px)]" />`);
+  });
+
+  it("allows percentage values like w-[50%]", () => {
+    expectClean(`<div className="w-[50%]" />`);
+  });
+
+  it("allows viewport units like h-[100vh]", () => {
+    expectClean(`<div className="h-[100vh]" />`);
+  });
+
+  it("allows non-bracket classes", () => {
+    expectClean(`<div className="px-4 gap-3 rounded-lg" />`);
+  });
+
+  it("allows color arbitrary values", () => {
+    expectClean(`<div className="bg-[--my-color]" />`);
+  });
+
+  it("allows opacity modifiers", () => {
+    expectClean(`<div className="bg-blue-500/[0.1]" />`);
+  });
+});
+
+// ── Gap 13: accentColor/caretColor in style props ─────────
+
+describe("additional color properties in style props", () => {
+  it("catches style={{ accentColor: '#22c55e' }}", () => {
+    expectError(
+      `<div style={{ accentColor: "#22c55e" }} />`,
+      "color property in style",
+    );
+  });
+
+  it("catches style={{ caretColor: 'red' }}", () => {
+    expectError(
+      `<div style={{ caretColor: "red" }} />`,
+      "color property in style",
+    );
+  });
+});
