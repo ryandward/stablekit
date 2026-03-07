@@ -41,7 +41,7 @@ export function StateMap<K extends string>({
   return (
     <LayoutGroup as={Tag} value={value} axis="both" data-inline {...props}>
       {Object.entries(map).map(([key, node]) => (
-        <LayoutView key={key} name={key}>{node as ReactNode}</LayoutView>
+        <LayoutView key={key} as="span" name={key}>{node as ReactNode}</LayoutView>
       ))}
     </LayoutGroup>
   );
