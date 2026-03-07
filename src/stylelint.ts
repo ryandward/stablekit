@@ -18,9 +18,10 @@
  *    in scoped selectors like `.badge[data-status="paid"]`, not in
  *    utilities that can spread via @apply or className.
  *
- * 4. Don't set color on descendants inside data-attribute selectors.
+ * 4. Don't set visual properties on descendants inside data-attribute selectors.
  *    `.card[data-status="error"] .icon { color: red }` is wrong —
  *    set color on the container and let children inherit via currentColor.
+ *    Also catches background, border-color, opacity, box-shadow, etc.
  *
  * 5. Don't animate layout properties (width, height, margin, padding,
  *    top/right/bottom/left). These trigger reflow on every frame.
@@ -99,14 +100,14 @@ function createDescendantColorPlugin() {
   // @apply params that set color: text-*, bg-*, border-*-color utilities
   const colorApplyPattern = /\btext-(?!xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl|left|right|center|justify|wrap|nowrap|ellipsis|clip|truncate)\w/;
 
-  const message = `Setting color on a descendant inside a data-attribute selector. Set color on the [data-*] container and let children inherit via currentColor.`;
+  const message = `Visual property on a descendant inside a data-attribute selector. Set visual properties on the [data-*] container and let children inherit via currentColor.`;
 
   const rule = (enabled: boolean) => {
     return (
       root: {
         walkRules: (cb: (rule: {
           selector: string;
-          walkDecls: (prop: string, cb: (decl: { source?: unknown }) => void) => void;
+          walkDecls: ((cb: (decl: { prop: string; source?: unknown }) => void) => void) & ((prop: string, cb: (decl: { source?: unknown }) => void) => void);
           walkAtRules: (name: string, cb: (atRule: { params: string; source?: unknown }) => void) => void;
         }) => void) => void;
       },
@@ -117,9 +118,12 @@ function createDescendantColorPlugin() {
       root.walkRules((ruleNode) => {
         if (!dataAttrWithDescendant.test(ruleNode.selector)) return;
 
-        // Catch `color:` declarations
-        ruleNode.walkDecls("color", (decl) => {
-          result.warn(message, { node: decl });
+        // Catch visual property declarations on descendants
+        const visualProps = /^(color|background|background-color|border-color|outline-color|fill|stroke|opacity|box-shadow|text-shadow)$/;
+        ruleNode.walkDecls((decl: { prop: string; source?: unknown }) => {
+          if (visualProps.test(decl.prop)) {
+            result.warn(message, { node: decl });
+          }
         });
 
         // Catch `@apply text-*` (color utilities)
