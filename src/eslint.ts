@@ -25,6 +25,15 @@
  *    and interpolated template literals. Each message guides toward
  *    extracting the expression to a variable (for data transforms) or
  *    using a StableKit component (for state-driven swaps). Always on.
+ *
+ * 5. className on custom components — passing className to a PascalCase
+ *    component is a presentation leak across the Structure boundary.
+ *    The component should own its own styling. Always on.
+ *
+ * 6. Dual-paradigm conflict — a component with a `loading` prop does
+ *    internal content swapping (StateSwap). If children are also variable,
+ *    both sides of the swap change simultaneously, defeating pre-allocation.
+ *    Children of loading-swappable components must be static.
  */
 
 export interface ArchitectureLintOptions {
@@ -42,6 +51,19 @@ export interface ArchitectureLintOptions {
    *  @default true */
   banColorUtilities?: boolean;
 
+  /** Components that transparently pass className to their root element.
+   *  These are excluded from the className-on-component ban.
+   *  e.g. ["StableText", "StableCounter", "MediaSkeleton", "ChevronDown"]
+   *  @default [] */
+  classNamePassthrough?: string[];
+
+
+  /** Components where `loading` prop does NOT trigger a content swap
+   *  (e.g. LoadingBoundary controls opacity, not geometry).
+   *  These are excluded from the dual-paradigm conflict rule.
+   *  @default ["LoadingBoundary"] */
+  loadingPassthrough?: string[];
+
   /** Glob patterns for files to lint.
    *  @default ["src/components/**\/*.{tsx,jsx}"] */
   files?: string[];
@@ -52,6 +74,8 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
     stateTokens,
     variantProps = [],
     banColorUtilities = true,
+    classNamePassthrough = [],
+    loadingPassthrough = ["LoadingBoundary"],
     files = ["src/components/**/*.{tsx,jsx}"],
   } = options;
 
@@ -232,6 +256,33 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
             ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > TemplateLiteral",
           message:
             "Interpolated text in JSX children. Extract to a const above the return (the linter won't flag a plain variable). For state-driven values, use <StableCounter> for numbers or <StateSwap> for text variants.",
+        },
+
+        // --- 5. className on custom components ---
+
+        ...(classNamePassthrough.length
+          ? [
+              {
+                selector: `JSXOpeningElement[name.name=/^[A-Z]/]:not([name.name=/^(${classNamePassthrough.join("|")})$/]) > JSXAttribute[name.name='className']`,
+                message:
+                  "className on a custom component. Components own their own styling — use a data-attribute, variant prop, or CSS class internally instead of passing Tailwind utilities from the consumer.",
+              },
+            ]
+          : [
+              {
+                selector:
+                  "JSXOpeningElement[name.name=/^[A-Z]/] > JSXAttribute[name.name='className']",
+                message:
+                  "className on a custom component. Components own their own styling — use a data-attribute, variant prop, or CSS class internally instead of passing Tailwind utilities from the consumer.",
+              },
+            ]),
+
+        // --- 6. Dual-paradigm conflict (loading + variable children) ---
+
+        {
+          selector: `JSXElement:has(JSXOpeningElement[name.name=/^[A-Z]/]:not([name.name=/^(${loadingPassthrough.join("|")})$/]) > JSXAttribute[name.name='loading']) > JSXExpressionContainer > Identifier`,
+          message:
+            "Variable children inside a component with a loading prop. The loading prop triggers an internal content swap — if children also change, both sides shrink simultaneously and pre-allocation is defeated. Use static children with the loading prop, or handle the entire swap explicitly with <StateSwap> in the caller.",
         },
       ],
     },

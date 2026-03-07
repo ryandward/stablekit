@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useStableKitMode } from "@/context/stablekit-mode";
+import { StableCounter } from "stablekit.ts";
 
 export function CLSCounter() {
   const { enabled } = useStableKitMode();
@@ -54,8 +55,10 @@ export function CLSCounter() {
         CLS
       </span>
       <div className="sk-cls-badge inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-micro font-semibold tabular-nums" data-rating={rating}>
-        <span>{score.toFixed(3)}</span>
-        <span className="font-normal opacity-60">{ratingLabel}</span>
+        <StableCounter value={score.toFixed(3)} reserve="0.000" />
+        <span className="font-normal opacity-60">
+          <StableCounter value={ratingLabel} reserve="Needs Work" />
+        </span>
       </div>
     </div>
   );

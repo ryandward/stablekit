@@ -415,6 +415,16 @@ currently behaving.
 .sk-badge[data-variant="active"] { color: var(--color-success); }
 ```
 
+## Out of Scope: Font-Swap CLS
+
+Do NOT build a component to solve font-swap layout shift. StableKit solves
+structural CLS (conditional mounting, dynamic content sizing). Font-swap CLS
+is a typographic metrics problem — no React component can pre-allocate
+geometry for a font that hasn't been downloaded yet. The fix is CSS
+`@font-face` metric overrides (`size-adjust`, `ascent-override`,
+`descent-override`, `line-gap-override`) via tools like Capsize, Fontaine,
+or `next/font`.
+
 ## Component selection guide
 
 | Problem                                    | Component            |

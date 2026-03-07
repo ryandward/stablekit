@@ -202,6 +202,31 @@ For CSP nonce support:
 <meta name="stablekit-nonce" content="your-nonce-here" />
 ```
 
+## Out of Scope: Font-Swap CLS
+
+StableKit solves **structural** layout shifts — conditional mounting, dynamic content sizing, state-driven geometry changes. These are DOM structure problems that React components can fix.
+
+Font-swap CLS is a different beast. When a web font loads and replaces the fallback font, the browser re-renders text with different metrics. This is a **typographic metrics** problem, not a DOM structure problem. No React component can pre-allocate geometry for a font that hasn't been downloaded yet — the browser doesn't know the dimensions until the font file arrives.
+
+To fix font-swap CLS, use CSS `@font-face` metric overrides:
+
+```css
+@font-face {
+  font-family: "Inter Fallback";
+  src: local("Arial");
+  size-adjust: 107%;
+  ascent-override: 90%;
+  descent-override: 22%;
+  line-gap-override: 0%;
+}
+
+body {
+  font-family: "Inter", "Inter Fallback", sans-serif;
+}
+```
+
+Tools like [Capsize](https://seek-oss.github.io/capsize/), [Fontaine](https://github.com/unjs/fontaine), and `next/font` generate these overrides automatically.
+
 ## License
 
 MIT

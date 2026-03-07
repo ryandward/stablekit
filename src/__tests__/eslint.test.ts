@@ -809,3 +809,117 @@ describe("interpolated text in JSX children", () => {
     );
   });
 });
+
+// ── Category 5: className on custom components ──────────────
+
+describe("className on custom components", () => {
+  it("catches <Input className='pl-9' />", () => {
+    expectError(
+      `<Input className="pl-9" />`,
+      "className on a custom component",
+    );
+  });
+
+  it("catches <Button className='mt-4 w-full' />", () => {
+    expectError(
+      `<Button className="mt-4 w-full" />`,
+      "className on a custom component",
+    );
+  });
+
+  it("catches className expression on component", () => {
+    expectError(
+      `<Card className={styles.card} />`,
+      "className on a custom component",
+    );
+  });
+
+  it("allows className on native elements", () => {
+    expectClean(
+      `<div className="flex gap-3 p-4" />`,
+    );
+  });
+
+  it("allows className on native span", () => {
+    expectClean(
+      `<span className="text-body font-bold" />`,
+    );
+  });
+
+  it("allows data-attributes on custom components", () => {
+    expectClean(
+      `<Badge data-variant="active" />`,
+    );
+  });
+
+  it("allows variant props on custom components", () => {
+    expectClean(
+      `<Badge variant="active">Paid</Badge>`,
+    );
+  });
+
+  it("allows className on passthrough components", () => {
+    expectClean(
+      `<StableText className="sk-heading" />`,
+      { stateTokens: [], classNamePassthrough: ["StableText"] },
+    );
+  });
+
+  it("still catches className on non-passthrough components when passthrough is set", () => {
+    expectError(
+      `<Input className="pl-9" />`,
+      "className on a custom component",
+      { stateTokens: [], classNamePassthrough: ["StableText"] },
+    );
+  });
+});
+
+// ── Category 6: Dual-paradigm conflict ──────────────────────
+
+describe("loading prop + variable children conflict", () => {
+  it("catches <Button loading={x}>{label}</Button>", () => {
+    expectError(
+      `<Button loading={isLoading}>{buttonLabel}</Button>`,
+      "Variable children inside a component with a loading prop",
+    );
+  });
+
+  it("catches <Card loading={x}>{content}</Card>", () => {
+    expectError(
+      `<Card loading={fetching}>{cardContent}</Card>`,
+      "Variable children inside a component with a loading prop",
+    );
+  });
+
+  it("allows static string children with loading", () => {
+    expectClean(
+      `<Button loading={isLoading}>Submit</Button>`,
+    );
+  });
+
+  it("allows JSX element children with loading", () => {
+    expectClean(
+      `<Button loading={isLoading}><span>Submit</span></Button>`,
+    );
+  });
+
+  it("allows LoadingBoundary with variable children (default passthrough)", () => {
+    expectClean(
+      `<LoadingBoundary loading={isLoading}>{content}</LoadingBoundary>`,
+    );
+  });
+
+  it("allows loading on native elements", () => {
+    expectClean(
+      `<img loading="lazy" src="photo.jpg" />`,
+    );
+  });
+
+  it("respects custom loadingPassthrough", () => {
+    expectClean(
+      `<Skeleton loading={true}>{content}</Skeleton>`,
+      { stateTokens: [], loadingPassthrough: ["LoadingBoundary", "Skeleton"] },
+    );
+  });
+});
+
