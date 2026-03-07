@@ -55,7 +55,7 @@ export const LoadingBoundary = forwardRef<HTMLElement, LoadingBoundaryProps>(
     } as CSSProperties;
 
     return (
-      <SizeRatchet ref={ref} axis="height" as={Tag} className={className} style={merged} {...props}>
+      <SizeRatchet ref={ref} as={Tag} className={className} style={merged} {...props}>
         <LoadingContext loading={loading}>
           {children}
         </LoadingContext>
