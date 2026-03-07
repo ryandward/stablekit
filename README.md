@@ -48,10 +48,10 @@ If a component depends on async data, its bounding box is declared synchronously
 
 ### Spatial Pre-allocation
 
-If a UI region has multiple states, all states render simultaneously in a CSS grid overlap. The container sizes to the largest. `LayoutMap` renders a dictionary of views, toggles visibility with `[inert]` + `data-state`, and never changes dimensions. `StateSwap` does the same for boolean content inside buttons and labels.
+If a UI region has multiple states, all states render simultaneously in a CSS grid overlap. The container sizes to the largest. `StateMap` renders a dictionary of views, toggles visibility with `[inert]` + `data-state`, and never changes dimensions. `StateSwap` is a boolean convenience wrapper around `StateMap` for two-state toggles.
 
 ```tsx
-<LayoutMap value={activeTab} map={{
+<StateMap value={activeTab} map={{
   profile: <Profile />,
   invoices: <Invoices />,
   settings: <Settings />,
@@ -74,9 +74,10 @@ Once a container expands, it cannot shrink unless explicitly reset. `SizeRatchet
 | `StableText` | Typography + skeleton in one tag |
 | `MediaSkeleton` | Aspect-ratio placeholder that constrains its child |
 | `CollectionSkeleton` | Loading-aware list with forced stub count |
-| `LayoutMap` | Type-safe dictionary of views with stable dimensions |
-| `LayoutGroup` + `LayoutView` | Multi-state spatial container (use LayoutMap when possible) |
-| `StateSwap` | Boolean content swap — both options rendered, zero shift |
+| `StateMap` | Multi-state content swap — keyed dictionary, inline, zero shift |
+| `StateSwap` | Boolean content swap — thin wrapper around StateMap |
+| `LayoutMap` | Block-level dictionary of views (tab panels, wizards) |
+| `LayoutGroup` + `LayoutView` | Manual multi-state container (use StateMap or LayoutMap) |
 | `StableCounter` | Numeric/text width pre-allocation via ghost reserve |
 | `StableField` | Form error height pre-allocation via ghost reserve |
 | `SizeRatchet` | Container that never shrinks (ResizeObserver ratchet) |

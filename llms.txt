@@ -21,7 +21,7 @@ This means:
   `stubCount`, `StableText` reserves space at line-height.)
 - **Spatial pre-allocation:** If a UI region has multiple states, all
   states must render simultaneously in a CSS grid overlap. The container
-  sizes to the largest. (`LayoutMap`, `LayoutGroup`, `StateSwap`)
+  sizes to the largest. (`StateMap`, `StateSwap`, `LayoutMap`, `LayoutGroup`)
 - **Monotonic geometry:** Once a container expands, it cannot shrink
   unless explicitly reset. (`SizeRatchet` with optional `resetKey`)
 - **Structural Integrity over Temporal Hacks:** Never unmount a state
@@ -46,7 +46,7 @@ rendering for the same UI region.
 | `StateSwap`          | Spatial                | Boolean content swap, zero shift             |
 | `LayoutGroup`        | Spatial                | Multi-state spatial stability container       |
 | `LayoutView`         | Spatial                | Single view inside a LayoutGroup             |
-| `LayoutMap`          | Spatial                | Dictionary-based state mapping (typo-proof)  |
+| `StateMap`           | Spatial                | Multi-state content swap, keyed, inline      |
 | `StableCounter`      | Spatial                | Numeric/text width pre-allocation            |
 | `StableField`        | Spatial                | Form error height pre-allocation             |
 | `SizeRatchet`        | Monotonic              | Container that never shrinks                 |
@@ -125,7 +125,7 @@ CORRECT — one button, swap content inside it:
 Use LayoutGroup/LayoutView only when swapping structurally different
 components (e.g. tab panels, multi-step forms).
 
-### 5. Do not use LayoutGroup/LayoutView for tab content — use LayoutMap
+### 5. Do not use LayoutGroup/LayoutView for tab content — use StateMap
 
 WRONG — string typos silently break rendering:
 ```tsx
@@ -137,7 +137,7 @@ WRONG — string typos silently break rendering:
 
 CORRECT — dictionary keys are checked by TypeScript:
 ```tsx
-<LayoutMap value={activeTab} map={{
+<StateMap value={activeTab} map={{
   profile: <Profile />,
   invoices: <Invoices />,
 }} />
@@ -311,11 +311,15 @@ change to structure requires editing `.css`, a boundary has leaked.
      The linter also enforces geometric stability by banning all conditional
      content in JSX children: ternary swaps (`{x ? <A/> : <B/>}`), conditional
      mounting (`{x && <Panel/>}`), fallback content (`{x || "default"}`),
-     nullish fallbacks (`{x ?? "loading"}`), and interpolated template literals
-     (`` {`text ${var}`} ``). Each error message guides toward the right fix:
+     nullish fallbacks (`{x ?? "loading"}`), interpolated template literals
+     (`` {`text ${var}`} ``), and conditional `hidden` props
+     (`hidden={x || undefined}`). The `hidden` attribute causes an element to
+     occupy zero space — toggling it conditionally is a layout shift. Use
+     `<StateSwap>` to pre-allocate geometry for all visual states instead.
+     Each error message guides toward the right fix:
      extract the expression to a variable above the JSX (for data transforms),
      or use a StableKit component (for state-driven swaps — StateSwap,
-     LayoutMap, LoadingBoundary, FadeTransition, StableField, StableCounter,
+     StateMap, LoadingBoundary, FadeTransition, StableField, StableCounter,
      LayoutGroup). These rules are always on.
      `classNameBlocked` declares your firewalled primitives (e.g.
      `["Badge", "Button", "Card", "Input"]`). Only those components are flagged
@@ -428,6 +432,32 @@ currently behaving.
 .sk-badge[data-variant="active"] { color: var(--color-success); }
 ```
 
+### 12. Do not use conditional hidden props to swap between states
+
+WRONG — hidden element takes zero space, causes layout shift when toggled:
+```tsx
+<Button hidden={status !== "active" || undefined}>
+  <Pause size={14} /> Pause
+</Button>
+<Button hidden={status !== "paused" || undefined}>
+  <Play size={14} /> Resume
+</Button>
+```
+
+CORRECT — StateSwap pre-allocates geometry for the wider option:
+```tsx
+<StateSwap
+  state={status === "active"}
+  true={<Button><Pause size={14} /> Pause</Button>}
+  false={<Button><Play size={14} /> Resume</Button>}
+/>
+```
+
+The `hidden` attribute sets `display: none` — the element is removed from
+flow entirely. When siblings toggle `hidden` with mutually exclusive
+conditions, the container resizes every time. StateSwap renders both states
+in a CSS grid overlap so the bounding box stays stable.
+
 ## Out of Scope: Font-Swap CLS
 
 Do NOT build a component to solve font-swap layout shift. StableKit solves
@@ -444,7 +474,7 @@ or `next/font`.
 |--------------------------------------------|----------------------|
 | Button text changes on toggle              | `StateSwap`          |
 | Icon changes on toggle                     | `StateSwap`          |
-| Tab panels with stable height              | `LayoutMap`          |
+| Tab panels with stable height              | `StateMap`           |
 | Multi-step wizard with stable dimensions   | `LayoutGroup` + `LayoutView` |
 | Text loading from API                      | `StableText` inside `LoadingBoundary` |
 | Image/video loading causes shift           | `MediaSkeleton`      |
@@ -465,7 +495,7 @@ import {
   StableText,
   MediaSkeleton,
   StateSwap,
-  LayoutMap,
+  StateMap,
   SizeRatchet,
   StableCounter,
   StableField,

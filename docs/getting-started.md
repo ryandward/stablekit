@@ -201,7 +201,7 @@ import {
   StableText,
   MediaSkeleton,
   StateSwap,
-  LayoutMap,
+  StateMap,
   StableCounter,
   StableField,
 } from "stablekit";

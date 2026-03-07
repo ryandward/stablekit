@@ -12,6 +12,9 @@ export type { LayoutViewProps } from "./components/layout-view";
 export { LayoutMap } from "./components/layout-map";
 export type { LayoutMapProps } from "./components/layout-map";
 
+export { StateMap } from "./components/state-map";
+export type { StateMapProps } from "./components/state-map";
+
 export { SizeRatchet } from "./components/size-ratchet";
 export type { SizeRatchetProps } from "./components/size-ratchet";
 

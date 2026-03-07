@@ -22,9 +22,10 @@
  *
  * 4. Geometric instability — conditional content in JSX children that
  *    causes layout shift: ternary swaps, && mounts, || / ?? fallbacks,
- *    and interpolated template literals. Each message guides toward
- *    extracting the expression to a variable (for data transforms) or
- *    using a StableKit component (for state-driven swaps). Always on.
+ *    interpolated template literals, and conditional hidden props.
+ *    Each message guides toward extracting the expression to a variable
+ *    (for data transforms) or using a StableKit component (for
+ *    state-driven swaps). Always on.
  *
  * 5. className on custom components — passing className to a PascalCase
  *    component is a presentation leak across the Structure boundary.
@@ -340,7 +341,7 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
           selector:
             ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > ConditionalExpression",
           message:
-            "Conditional content in JSX children. Extract to a const above the return (the linter won't flag a plain variable). Do NOT replace with the hidden attribute. For state-driven swaps, use <StateSwap> for text, <LayoutMap> for keyed views, or <LoadingBoundary> for async states.",
+            "Conditional content in JSX children. Extract to a const above the return (the linter won't flag a plain variable). Do NOT replace with the hidden attribute. For state-driven swaps, use <StateSwap> for text, <StateMap> for keyed views, or <LoadingBoundary> for async states.",
         },
         {
           selector:
@@ -365,6 +366,15 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
             ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > TemplateLiteral",
           message:
             "Interpolated text in JSX children. Extract to a const above the return (the linter won't flag a plain variable). For state-driven values, use <StableCounter> for numbers or <StateSwap> for text variants.",
+        },
+
+        // --- 4b. Conditional hidden prop (geometric instability) ---
+
+        {
+          selector:
+            "JSXAttribute[name.name='hidden'] > JSXExpressionContainer > :not(Literal)",
+          message:
+            "Conditional hidden prop causes layout shift — the element occupies zero space when hidden, then expands when shown. Use <StateSwap> to pre-allocate geometry for all visual states.",
         },
 
         // --- 5. className on firewalled components ---

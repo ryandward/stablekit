@@ -1,6 +1,5 @@
 import type { HTMLAttributes, ElementType, ReactNode } from "react";
-import { LayoutGroup } from "./layout-group";
-import { LayoutView } from "./layout-view";
+import { StateMap } from "./state-map";
 
 export interface StateSwapProps extends HTMLAttributes<HTMLElement> {
   /** The boolean state that drives which content is visible. */
@@ -16,6 +15,7 @@ export interface StateSwapProps extends HTMLAttributes<HTMLElement> {
 /**
  * Boolean content swap with zero layout shift.
  *
+ * Thin wrapper around StateMap with two keys ("true" / "false").
  * Reserves the width of the wider option so the container never changes
  * dimensions when toggling between states.
  *
@@ -28,27 +28,18 @@ export interface StateSwapProps extends HTMLAttributes<HTMLElement> {
  *   <StateSwap state={open} true="Close" false="Open" />
  * </button>
  * ```
- *
- * @example
- * ```tsx
- * <StateSwap
- *   state={expanded}
- *   true={<ChevronUp />}
- *   false={<ChevronDown />}
- * />
- * ```
  */
 export function StateSwap({
   state,
   true: onTrue,
   false: onFalse,
-  as: Tag = "span",
   ...props
 }: StateSwapProps) {
   return (
-    <LayoutGroup as={Tag} value={state ? "true" : "false"} axis="both" data-inline {...props}>
-      <LayoutView as="span" name="true">{onTrue}</LayoutView>
-      <LayoutView as="span" name="false">{onFalse}</LayoutView>
-    </LayoutGroup>
+    <StateMap
+      value={state ? "true" : "false"}
+      map={{ true: onTrue, false: onFalse }}
+      {...props}
+    />
   );
 }

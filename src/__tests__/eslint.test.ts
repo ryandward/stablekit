@@ -811,6 +811,64 @@ describe("interpolated text in JSX children", () => {
   });
 });
 
+// ── Category 4b: Conditional hidden prop ────────────────────────
+
+describe("conditional hidden prop (layout shift)", () => {
+  it("catches hidden={condition || undefined}", () => {
+    expectError(
+      `<Button hidden={status !== "active" || undefined}>Pause</Button>`,
+      "Conditional hidden prop",
+    );
+  });
+
+  it("catches hidden={!x}", () => {
+    expectError(
+      `<Button hidden={!isActive}>Resume</Button>`,
+      "Conditional hidden prop",
+    );
+  });
+
+  it("catches hidden={x ? true : undefined}", () => {
+    expectError(
+      `<div hidden={isLoading ? true : undefined}>Content</div>`,
+      "Conditional hidden prop",
+    );
+  });
+
+  it("catches hidden={variable}", () => {
+    expectError(
+      `<span hidden={isHidden}>Text</span>`,
+      "Conditional hidden prop",
+    );
+  });
+
+  it("catches hidden={obj.prop}", () => {
+    expectError(
+      `<span hidden={sub.isPaused}>Paused</span>`,
+      "Conditional hidden prop",
+    );
+  });
+
+  it("catches hidden={x !== 'y'}", () => {
+    expectError(
+      `<Button hidden={status !== "paused"}>Resume</Button>`,
+      "Conditional hidden prop",
+    );
+  });
+
+  it("allows static hidden (no value)", () => {
+    expectClean(`<div hidden>Always hidden</div>`);
+  });
+
+  it("allows hidden={true}", () => {
+    expectClean(`<div hidden={true}>Always hidden</div>`);
+  });
+
+  it("allows hidden={false}", () => {
+    expectClean(`<div hidden={false}>Always visible</div>`);
+  });
+});
+
 // ── Category 5: className on firewalled components ──────────────
 
 describe("className on firewalled components", () => {
