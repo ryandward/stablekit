@@ -21,6 +21,10 @@
  * 4. Don't set color on descendants inside data-attribute selectors.
  *    `.card[data-status="error"] .icon { color: red }` is wrong —
  *    set color on the container and let children inherit via currentColor.
+ *
+ * 5. Don't animate layout properties (width, height, margin, padding,
+ *    top/right/bottom/left). These trigger reflow on every frame.
+ *    Use transform (scaleY, translateY) or opacity instead.
  */
 
 export interface StyleLintOptions {
@@ -160,6 +164,17 @@ export function createStyleLint(options: StyleLintOptions = {}) {
 
     // Ban color on descendants inside data-attribute selectors.
     [descendantColorRuleName]: true,
+
+    // Ban animating layout properties — causes reflow on every frame.
+    // Use transform (scaleY, translateY) or opacity instead.
+    "declaration-property-value-disallowed-list": [
+      {
+        "transition": [/\b(width|height|max-height|min-height|max-width|min-width|margin|padding|top|right|bottom|left)\b/],
+        "transition-property": [/\b(width|height|max-height|min-height|max-width|min-width|margin|padding|top|right|bottom|left)\b/],
+        "animation-name": [],
+      },
+      { message: "Animating layout properties causes reflow. Use transform or opacity instead." },
+    ],
   };
 
   if (functionalTokens.length > 0) {

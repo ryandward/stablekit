@@ -135,8 +135,8 @@
 }
 
 @keyframes sk-collapse {
-  from { opacity: 1; max-height: var(--sk-fade-height); overflow: hidden; }
-  to   { opacity: 0; max-height: 0; overflow: hidden; }
+  from { opacity: 1; transform: scaleY(1); transform-origin: top; }
+  to   { opacity: 0; transform: scaleY(0); transform-origin: top; }
 }
 
 /* ── Loading layers ────────────────────────────────────────────────────────── */

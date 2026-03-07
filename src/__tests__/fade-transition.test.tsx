@@ -28,15 +28,11 @@ describe("FadeTransition", () => {
     expect(container.querySelector("section.sk-fade")).toBeTruthy();
   });
 
-  it("sets --sk-fade-height from measured scrollHeight on exit", () => {
+  it("applies exiting class when show changes to false", () => {
     const { container, rerender } = render(<FadeTransition show={true}>Content</FadeTransition>);
-    const el = container.querySelector(".sk-fade") as HTMLElement;
-
-    // jsdom scrollHeight is 0, but the style should still be set to "0px"
-    Object.defineProperty(el, "scrollHeight", { value: 237, configurable: true });
 
     rerender(<FadeTransition show={false}>Content</FadeTransition>);
 
-    expect(el.style.getPropertyValue("--sk-fade-height")).toBe("237px");
+    expect(container.querySelector(".sk-fade-exiting")).toBeTruthy();
   });
 });
