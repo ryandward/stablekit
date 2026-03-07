@@ -74,16 +74,17 @@ describe("LayoutGroup + LayoutView", () => {
     expect(screen.getByText("Gamma")).toBeInTheDocument();
   });
 
-  it("hides inactive views with inline visibility hidden", () => {
+  it("marks inactive views with data-state='inactive'", () => {
     render(
       <LayoutGroup value="a">
         <LayoutView name="a"><p>Alpha</p></LayoutView>
         <LayoutView name="b"><p>Beta</p></LayoutView>
       </LayoutGroup>
     );
+    const alphaView = screen.getByText("Alpha").parentElement!;
     const betaView = screen.getByText("Beta").parentElement!;
-    expect(betaView.style.visibility).toBe("hidden");
-    expect(betaView.style.opacity).toBe("0");
+    expect(alphaView).toHaveAttribute("data-state", "active");
+    expect(betaView).toHaveAttribute("data-state", "inactive");
   });
 
   it("LayoutView defaults to active when no name and no value", () => {

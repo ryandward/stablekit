@@ -47,7 +47,7 @@ One JSX tree describes both the loading state and the loaded state. The geometry
 
 If a UI region can exist in multiple mutually exclusive states, the DOM must render all possible states simultaneously and reserve the maximum combined footprint.
 
-`LayoutMap` refuses to let you conditionally render trees with a ternary. You supply the entire dictionary of possible futures upfront. It renders them all into a single CSS grid cell, measures the largest bounding box, locks the geometry, and toggles visibility with `[inert]` + inline styles. The container never changes dimensions.
+`LayoutMap` refuses to let you conditionally render trees with a ternary. You supply the entire dictionary of possible futures upfront. It renders them all into a single CSS grid cell, measures the largest bounding box, locks the geometry, and toggles visibility with `[inert]` + a CSS-driven `data-state` attribute. The container never changes dimensions.
 
 ```tsx
 <LayoutMap
@@ -121,7 +121,7 @@ npm install stablekit
 
 ## How It Works
 
-**Spatial stability** uses CSS grid overlap (`grid-area: 1/1`). All views render in the DOM simultaneously. The container auto-sizes to the largest child. Inactive views are hidden with `[inert]` + inline `visibility: hidden`. Zero JS measurement.
+**Spatial stability** uses CSS grid overlap (`grid-area: 1/1`). All views render in the DOM simultaneously. The container auto-sizes to the largest child. Inactive views are hidden with `[inert]` + `data-state="inactive"` (CSS-driven `opacity: 0; visibility: hidden`). Because hiding is CSS-driven rather than inline-style-driven, consumers can add CSS transitions to `.sk-layout-view` for custom enter/exit animations. Zero JS measurement.
 
 **Loading skeletons** use `1lh` CSS units to match line-height exactly. Shimmer width comes from inert ghost content — the skeleton is exactly as wide as the text it replaces.
 

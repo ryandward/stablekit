@@ -1,7 +1,8 @@
 import { FadeTransition, StateSwap } from "stablekit";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, X } from "lucide-react";
 import { useStableKitMode } from "@/context/stablekit-mode";
 import { SKLabel } from "@/components/sk-label";
+import { statusBadgeColors } from "@/data/status";
 import { cn } from "@/lib/utils";
 import { CustomerProfile } from "@/components/customer-profile";
 import type { Customer } from "@/data/customers";
@@ -12,11 +13,9 @@ interface CustomerCardProps {
   onToggleExpand: () => void;
 }
 
-const statusColors: Record<string, string> = {
-  active: "bg-emerald-50 text-emerald-700",
-  churned: "bg-red-50 text-red-700",
-  trial: "bg-amber-50 text-amber-700",
-};
+/* Shared styling — identical on both paths so the only difference is structural */
+const detailsButtonClass =
+  "flex items-center gap-1 text-[13px] font-medium text-brand hover:text-brand-hover transition-colors duration-200 ease-standard";
 
 export function CustomerCard({
   customer,
@@ -25,76 +24,110 @@ export function CustomerCard({
 }: CustomerCardProps) {
   const { enabled } = useStableKitMode();
 
+  /* Close button is deliberately smaller (size-9 / 36px) than the avatar (size-12 / 48px).
+     StateSwap pre-allocates to the larger element — no shift.
+     Raw ternary swaps between mismatched sizes — visible shift. */
+  const closeButton = (
+    <button
+      type="button"
+      onClick={onToggleExpand}
+      className="sk-morph-close size-9 rounded-lg bg-muted flex items-center justify-center transition duration-200 ease-out-expo hover:bg-border hover:shadow-[0_0_0_2px_rgba(91,74,238,0.15)] active:scale-95 cursor-pointer"
+      aria-label="Close profile"
+    >
+      <X size={16} className="text-muted-foreground" />
+    </button>
+  );
+
+  const avatar = (
+    <img
+      src={customer.avatar}
+      alt={customer.name}
+      width={48}
+      height={48}
+      className="sk-morph-avatar size-12 rounded-lg bg-muted"
+    />
+  );
+
   return (
-    <div className="rounded-xl border border-border bg-card shadow-sm hover:shadow-md transition-shadow">
-      {/* Collapsed header -- always visible */}
+    <div className="rounded-xl border border-border/50 bg-card shadow-sm transition duration-300 ease-standard hover:-translate-y-0.5 hover:shadow-md">
+      {/* Header */}
       <div className="flex items-center gap-4 p-5">
-        <img
-          src={customer.avatar}
-          alt={customer.name}
-          width={48}
-          height={48}
-          className="size-12 rounded-full bg-muted flex-shrink-0"
-        />
+        {/* Avatar (48px) ↔ Close (36px) — size mismatch is the point */}
+        {enabled ? (
+          <StateSwap
+            state={expanded}
+            as="div"
+            className="size-12 flex-shrink-0 place-items-center"
+            true={closeButton}
+            false={avatar}
+          />
+        ) : (
+          <div className="size-12 flex-shrink-0 flex items-center justify-center">
+            {expanded ? closeButton : avatar}
+          </div>
+        )}
+
         <div className="flex-1 min-w-0">
           <p className="font-medium text-card-foreground truncate">
             {customer.name}
           </p>
-          <p className="text-sm text-muted-foreground truncate">
+          <p className="text-[13px] text-muted-foreground truncate">
             {customer.title} at {customer.company}
           </p>
         </div>
+
         <div className="flex items-center gap-4 shrink-0 flex-wrap justify-end">
           <span
             className={cn(
-              "text-[11px] font-medium uppercase tracking-wider rounded-full px-2.5 py-0.5 hidden sm:inline-flex",
-              statusColors[customer.status],
+              "text-[10px] font-semibold uppercase tracking-[0.08em] rounded-full border px-2.5 py-0.5 hidden sm:inline-flex",
+              statusBadgeColors[customer.status],
             )}
           >
             {customer.status}
           </span>
-          <span className="text-sm font-medium tabular-nums text-card-foreground hidden sm:inline">
+          <span className="text-[13px] font-semibold tabular-nums text-card-foreground hidden sm:inline">
             ${customer.mrr.toLocaleString()}
           </span>
           <button
             type="button"
             onClick={onToggleExpand}
-            className="flex items-center gap-1.5 text-sm font-semibold text-brand hover:text-brand-hover transition-colors"
+            className={detailsButtonClass}
           >
             {enabled ? (
               <>
-                <StateSwap state={expanded} true="Close" false="View Details" />
+                <StateSwap state={expanded} true="Close" false="Details" />
                 <StateSwap
                   state={expanded}
-                  true={<ChevronUp size={16} />}
-                  false={<ChevronDown size={16} />}
+                  true={<ChevronUp size={14} />}
+                  false={<ChevronDown size={14} />}
                 />
               </>
             ) : (
-              expanded ? <>Close <ChevronUp size={16} /></> : <>View Details <ChevronDown size={16} /></>
+              <>
+                {expanded ? "Close" : "Details"}
+                {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </>
             )}
           </button>
         </div>
       </div>
 
-      {/* StateSwap annotation */}
-      {enabled && expanded && (
-        <div className="px-5 -mt-2 mb-2">
-          <SKLabel component="StateSwap" paradigm="spatial" />
-        </div>
-      )}
+      {/* Annotations */}
+      <div className="px-5 -mt-2 mb-2" style={expanded ? undefined : { opacity: 0, height: 0, overflow: "hidden" }}>
+        <SKLabel component="StateSwap" paradigm="spatial" />
+      </div>
 
-      {/* Expanded area */}
+      {/* Expanded area — FadeTransition is a library feature, raw conditional is not */}
       {enabled ? (
         <FadeTransition show={expanded}>
-          <div className="border-t border-border">
-            <CustomerProfile customer={customer} mode="stable" />
+          <div className="border-t border-border/40">
+            <CustomerProfile customer={customer} />
           </div>
         </FadeTransition>
       ) : (
         expanded && (
-          <div className="border-t border-border">
-            <CustomerProfile customer={customer} mode="naive" />
+          <div className="border-t border-border/40">
+            <CustomerProfile customer={customer} />
           </div>
         )
       )}

@@ -20,20 +20,13 @@
   flex-direction: column;
 }
 
-/* Inactive LayoutView hiding — belt and suspenders.
-   Primary: inline style on the View element (visibility: hidden + opacity: 0).
-   Inline styles can't be overridden by any CSS cascade — this is the
-   bulletproof layer.
-   Backup: CSS rules below catch edge cases (e.g. if inline styles are
-   stripped by a framework or test harness).
-   transition: none on descendants prevents children with transition-all
-   from animating the inherited visibility change. */
-.sk-layout-group > [inert] {
-  visibility: hidden;
+/* Inactive LayoutView hiding — CSS-driven via data-state attribute.
+   LayoutView sets data-state="active"|"inactive" so consumers can
+   override transitions on .sk-layout-view without specificity fights.
+   [inert] handles accessibility (non-focusable, non-interactive). */
+.sk-layout-view[data-state="inactive"] {
   opacity: 0;
-}
-.sk-layout-group > [inert] * {
-  transition: none;
+  visibility: hidden;
 }
 
 /* ── SizeRatchet ───────────────────────────────────────────────────────────── */
@@ -89,7 +82,6 @@
    Child constraints enforced via React.cloneElement inline styles. */
 .sk-media {
   overflow: hidden;
-  width: 100%;
 }
 .sk-media-shimmer {
   position: absolute;
@@ -103,41 +95,47 @@
   );
   background-size: 200% 100%;
   animation: sk-shimmer 1.5s ease-in-out infinite;
+  transition: opacity var(--sk-exit-duration, 400ms) cubic-bezier(0.05, 0.7, 0.1, 1.0);
 }
 
 /* ── FadeTransition ────────────────────────────────────────────────────────── */
 
 .sk-fade {
-  --sk-fade-duration: 200ms;
+  --sk-fade-duration: 400ms;
 }
 
 .sk-fade-entering {
-  animation: sk-fade-in var(--sk-fade-duration) ease-out;
+  animation: sk-emerge var(--sk-fade-duration) cubic-bezier(0.05, 0.7, 0.1, 1.0) forwards;
 }
 
 .sk-fade-exiting {
-  animation: sk-fade-out var(--sk-fade-duration) ease-out forwards;
+  animation: sk-collapse 200ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-@keyframes sk-fade-in {
-  from { opacity: 0; max-height: 0; overflow: hidden; }
-  to   { opacity: 1; max-height: var(--sk-fade-height, 1000px); overflow: hidden; }
+@keyframes sk-emerge {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
-@keyframes sk-fade-out {
+@keyframes sk-collapse {
   from { opacity: 1; max-height: var(--sk-fade-height, 1000px); overflow: hidden; }
   to   { opacity: 0; max-height: 0; overflow: hidden; }
 }
 
-/* ── Loading exit ──────────────────────────────────────────────────────────── */
+/* ── Loading layers ────────────────────────────────────────────────────────── */
 
-/* Applied by LoadingBoundary during shimmer→content transition. */
-.sk-loading-exiting .sk-shimmer-line {
-  animation: sk-loading-exit var(--sk-exit-duration, 150ms) ease-out forwards;
-}
-
-@keyframes sk-loading-exit {
-  to { opacity: 0; }
+/* Shared by shimmer and content layers inside skeleton components.
+   Both layers permanently occupy the same grid cell; only opacity
+   and interactivity change. CSS transitions handle the crossfade. */
+.sk-loading-layer {
+  grid-area: 1 / 1;
+  transition: opacity var(--sk-exit-duration, 400ms) cubic-bezier(0.05, 0.7, 0.1, 1.0);
 }
 
 /* ── Reduced motion ────────────────────────────────────────────────────────── */
@@ -148,8 +146,11 @@
   .sk-fade-entering,
   .sk-fade-exiting,
   .sk-shimmer-line,
-  .sk-media-shimmer,
-  .sk-loading-exiting .sk-shimmer-line {
+  .sk-media-shimmer {
     animation-duration: 0s !important;
+  }
+  .sk-loading-layer,
+  .sk-media-shimmer {
+    transition-duration: 0s !important;
   }
 }

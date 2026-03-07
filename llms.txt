@@ -24,6 +24,15 @@ This means:
   sizes to the largest. (`LayoutMap`, `LayoutGroup`, `StateSwap`)
 - **Monotonic geometry:** Once a container expands, it cannot shrink
   unless explicitly reset. (`SizeRatchet` with optional `resetKey`)
+- **Structural Integrity over Temporal Hacks:** Never unmount a state
+  to show another. Stack all possible states in the DOM and use CSS
+  `opacity`/`visibility` to transition between them. Conditional
+  mounting (`{loading ? <A/> : <B/>}`) is a fatal architectural error
+  in StableKit. All layers coexist permanently; only opacity and
+  interactivity (`inert`, `pointer-events`) change. LayoutView exposes
+  a `data-state="active"|"inactive"` attribute — consumers can target
+  `.sk-layout-view[data-state]` selectors to add CSS transitions for
+  custom enter/exit animations without specificity fights.
 
 When you generate code with StableKit, you are not adding progressive
 enhancement to existing React patterns. You are replacing the rendering

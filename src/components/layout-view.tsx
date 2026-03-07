@@ -30,22 +30,23 @@ export interface LayoutViewProps extends HTMLAttributes<HTMLElement> {
   as?: ElementType;
 }
 
-const HIDDEN_STYLE: React.CSSProperties = { visibility: "hidden", opacity: 0 };
-
 /**
  * Single view inside a LayoutGroup.
  *
  * All views overlap via CSS grid. Inactive views are hidden but still
  * contribute to grid cell sizing — the container never changes dimensions.
  *
- * Inactive hiding uses inline styles (can't be overridden by CSS cascade)
- * plus the [inert] attribute for accessibility (non-focusable, non-interactive).
+ * Inactive hiding uses a `data-state` attribute driven by CSS
+ * (`.sk-layout-view[data-state="inactive"]`) plus the `[inert]` attribute
+ * for accessibility (non-focusable, non-interactive). Because hiding is
+ * CSS-driven rather than inline-style-driven, consumers can override
+ * transitions on the `.sk-layout-view` class without specificity fights.
  *
  * Active views get tabIndex={-1} so they are programmatically focusable
  * (but excluded from the tab ring) for focus handoff.
  */
 export const LayoutView = forwardRef<HTMLElement, LayoutViewProps>(
-  function LayoutView({ active, name, as: Tag = "div", style, children, ...props }, ref) {
+  function LayoutView({ active, name, as: Tag = "div", style, className, children, ...props }, ref) {
     useInsertionEffect(injectStyles, []);
 
     useContext(AxisContext);
@@ -75,14 +76,16 @@ export const LayoutView = forwardRef<HTMLElement, LayoutViewProps>(
       internalRef.current?.focus({ preventScroll: true });
     });
 
-    const merged = isActive ? style : style ? { ...style, ...HIDDEN_STYLE } : HIDDEN_STYLE;
+    const viewClass = className ? `sk-layout-view ${className}` : "sk-layout-view";
 
     return (
       <Tag
         ref={mergeRefs(ref, internalRef)}
+        className={viewClass}
+        data-state={isActive ? "active" : "inactive"}
         tabIndex={isActive ? -1 : undefined}
         inert={!isActive || undefined}
-        style={merged}
+        style={style}
         {...props}
       >
         {children}
