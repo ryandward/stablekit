@@ -24,7 +24,8 @@
   flex-direction: column;
 }
 .sk-layout-group[data-inline] > * {
-  display: inline;
+  display: inline-flex;
+  align-items: center;
 }
 
 /* Inactive LayoutView hiding — CSS-driven via data-state attribute.
