@@ -1,6 +1,6 @@
 {
   "name": "stablekit.ts",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "React toolkit for layout stability — zero-shift components for loading states, content swaps, and spatial containers.",
   "type": "module",
   "main": "./dist/index.cjs",
