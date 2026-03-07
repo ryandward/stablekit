@@ -22,7 +22,9 @@
  *
  * 4. Geometric instability — conditional content in JSX children that
  *    causes layout shift: ternary swaps, && mounts, || / ?? fallbacks,
- *    and interpolated template literals. Always on.
+ *    and interpolated template literals. Each message guides toward
+ *    extracting the expression to a variable (for data transforms) or
+ *    using a StableKit component (for state-driven swaps). Always on.
  */
 
 export interface ArchitectureLintOptions {
@@ -205,31 +207,31 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
           selector:
             ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > ConditionalExpression",
           message:
-            "Conditional content causes layout shift. Use <StateSwap> for text, <LayoutMap> for keyed views, or <LoadingBoundary> for async states.",
+            "Conditional content in JSX children. Extract the expression to a variable above the JSX. If this is a state-driven swap, use <StateSwap> for text, <LayoutMap> for keyed views, or <LoadingBoundary> for async states.",
         },
         {
           selector:
             ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > LogicalExpression[operator='&&']",
           message:
-            "Conditional mounting causes layout shift. Use <FadeTransition> for enter/exit, <StableField> for form errors, or render all states with <LayoutGroup>.",
+            "Conditional mount in JSX children. Extract the expression to a variable above the JSX. If this is a state-driven mount, use <FadeTransition> for enter/exit, <StableField> for form errors, or render all states with <LayoutGroup>.",
         },
         {
           selector:
             ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > LogicalExpression[operator='||']",
           message:
-            "Fallback content causes layout shift. Use <StateSwap> to pre-allocate space for both states.",
+            "Fallback content in JSX children. Extract the expression to a variable above the JSX. If this is a state-driven fallback, use <StateSwap> to pre-allocate space for both states.",
         },
         {
           selector:
             ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > LogicalExpression[operator='??']",
           message:
-            "Nullish fallback causes layout shift. Use <StateSwap> to pre-allocate space for both states.",
+            "Nullish fallback in JSX children. Extract the expression to a variable above the JSX. If this is a state-driven fallback, use <StateSwap> to pre-allocate space for both states.",
         },
         {
           selector:
             ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > TemplateLiteral",
           message:
-            "Interpolated text causes layout shift. Use <StableCounter> for numbers or <StateSwap> for text variants.",
+            "Interpolated text in JSX children. Extract the expression to a variable above the JSX. If this is a state-driven value, use <StableCounter> for numbers or <StateSwap> for text variants.",
         },
       ],
     },

@@ -312,10 +312,11 @@ change to structure requires editing `.css`, a boundary has leaked.
      content in JSX children: ternary swaps (`{x ? <A/> : <B/>}`), conditional
      mounting (`{x && <Panel/>}`), fallback content (`{x || "default"}`),
      nullish fallbacks (`{x ?? "loading"}`), and interpolated template literals
-     (`` {`text ${var}`} ``). These patterns cause layout shift — the error
-     message for each points to the StableKit component that fixes it
-     (StateSwap, LayoutMap, LoadingBoundary, FadeTransition, StableField,
-     StableCounter, LayoutGroup). These rules are always on.
+     (`` {`text ${var}`} ``). Each error message guides toward the right fix:
+     extract the expression to a variable above the JSX (for data transforms),
+     or use a StableKit component (for state-driven swaps — StateSwap,
+     LayoutMap, LoadingBoundary, FadeTransition, StableField, StableCounter,
+     LayoutGroup). These rules are always on.
   4. **Stylelint** (`stablekit/stylelint`) — `createStyleLint({ functionalTokens })`
      bans element selectors in CSS (`& svg`, `& span`), bans `!important`, and
      bans functional color tokens inside `@utility` blocks. `functionalTokens`
