@@ -693,21 +693,21 @@ describe("ternary content in JSX children", () => {
   it("catches {loading ? <Spinner/> : <Content/>}", () => {
     expectError(
       `<div>{loading ? <Spinner /> : <Content />}</div>`,
-      "Conditional content in JSX children",
+      "Conditional content in JSX children. Extract to a const",
     );
   });
 
   it("catches {submitted ? 'Saved!' : 'Save'} in button", () => {
     expectError(
       `<button>{submitted ? "Saved!" : "Save"}</button>`,
-      "Conditional content in JSX children",
+      "Conditional content in JSX children. Extract to a const",
     );
   });
 
   it("catches ternary inside fragment child", () => {
     expectError(
       `<>{x ? <A /> : <B />}</>`,
-      "Conditional content in JSX children",
+      "Conditional content in JSX children. Extract to a const",
     );
   });
 
@@ -734,14 +734,14 @@ describe("conditional mount via && in JSX children", () => {
   it("catches {expanded && <Panel/>}", () => {
     expectError(
       `<div>{expanded && <Panel />}</div>`,
-      "Conditional mount in JSX children",
+      "Conditional mount in JSX children. Extract to a const",
     );
   });
 
   it("catches {error && <span>msg</span>}", () => {
     expectError(
       `<div>{error && <span>Error occurred</span>}</div>`,
-      "Conditional mount in JSX children",
+      "Conditional mount in JSX children. Extract to a const",
     );
   });
 
@@ -756,7 +756,7 @@ describe("fallback content via || in JSX children", () => {
   it("catches {name || 'Unknown'}", () => {
     expectError(
       `<span>{name || "Unknown"}</span>`,
-      "Fallback content in JSX children",
+      "Fallback content in JSX children. Extract to a const",
     );
   });
 
@@ -786,14 +786,14 @@ describe("interpolated text in JSX children", () => {
   it("catches template literal with expression", () => {
     expectError(
       "<span>{`Charge All (${count})`}</span>",
-      "Interpolated text in JSX children",
+      "Interpolated text in JSX children. Extract to a const",
     );
   });
 
   it("catches template literal with multiple expressions", () => {
     expectError(
       "<span>{`${qty} items at $${price}`}</span>",
-      "Interpolated text in JSX children",
+      "Interpolated text in JSX children. Extract to a const",
     );
   });
 

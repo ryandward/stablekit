@@ -207,31 +207,31 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
           selector:
             ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > ConditionalExpression",
           message:
-            "Conditional content in JSX children. Extract the expression to a variable above the JSX. If this is a state-driven swap, use <StateSwap> for text, <LayoutMap> for keyed views, or <LoadingBoundary> for async states.",
+            "Conditional content in JSX children. Extract to a const above the return (the linter won't flag a plain variable). Do NOT replace with the hidden attribute. For state-driven swaps, use <StateSwap> for text, <LayoutMap> for keyed views, or <LoadingBoundary> for async states.",
         },
         {
           selector:
             ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > LogicalExpression[operator='&&']",
           message:
-            "Conditional mount in JSX children. Extract the expression to a variable above the JSX. If this is a state-driven mount, use <FadeTransition> for enter/exit, <StableField> for form errors, or render all states with <LayoutGroup>.",
+            "Conditional mount in JSX children. Extract to a const above the return (the linter won't flag a plain variable). Do NOT use the hidden attribute — it renders children unconditionally and will crash on null data. For state-driven mounts, use <FadeTransition> for enter/exit, <StableField> for form errors, or <LayoutGroup> for pre-rendered views.",
         },
         {
           selector:
             ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > LogicalExpression[operator='||']",
           message:
-            "Fallback content in JSX children. Extract the expression to a variable above the JSX. If this is a state-driven fallback, use <StateSwap> to pre-allocate space for both states.",
+            "Fallback content in JSX children. Extract to a const above the return (the linter won't flag a plain variable). For state-driven fallbacks, use <StateSwap> to pre-allocate space for both states.",
         },
         {
           selector:
             ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > LogicalExpression[operator='??']",
           message:
-            "Nullish fallback in JSX children. Extract the expression to a variable above the JSX. If this is a state-driven fallback, use <StateSwap> to pre-allocate space for both states.",
+            "Nullish fallback in JSX children. Extract to a const above the return (the linter won't flag a plain variable). For state-driven fallbacks, use <StateSwap> to pre-allocate space for both states.",
         },
         {
           selector:
             ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > TemplateLiteral",
           message:
-            "Interpolated text in JSX children. Extract the expression to a variable above the JSX. If this is a state-driven value, use <StableCounter> for numbers or <StateSwap> for text variants.",
+            "Interpolated text in JSX children. Extract to a const above the return (the linter won't flag a plain variable). For state-driven values, use <StableCounter> for numbers or <StateSwap> for text variants.",
         },
       ],
     },
