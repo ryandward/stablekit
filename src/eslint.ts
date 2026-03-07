@@ -19,6 +19,10 @@
  *
  * 3. Ternaries on variant props — if a variant prop created by
  *    createPrimitive has a ternary, the visual decision is in JS.
+ *
+ * 4. Geometric instability — conditional content in JSX children that
+ *    causes layout shift: ternary swaps, && mounts, || / ?? fallbacks,
+ *    and interpolated template literals. Always on.
  */
 
 export interface ArchitectureLintOptions {

@@ -308,6 +308,14 @@ change to structure requires editing `.css`, a boundary has leaked.
      classNames. `stateTokens` declares your project's functional color
      vocabulary. `variantProps` declares prop names from `createPrimitive` —
      bans ternaries like `intent={x ? "primary" : "outline"}`.
+     The linter also enforces geometric stability by banning all conditional
+     content in JSX children: ternary swaps (`{x ? <A/> : <B/>}`), conditional
+     mounting (`{x && <Panel/>}`), fallback content (`{x || "default"}`),
+     nullish fallbacks (`{x ?? "loading"}`), and interpolated template literals
+     (`` {`text ${var}`} ``). These patterns cause layout shift — the error
+     message for each points to the StableKit component that fixes it
+     (StateSwap, LayoutMap, LoadingBoundary, FadeTransition, StableField,
+     StableCounter, LayoutGroup). These rules are always on.
   4. **Stylelint** (`stablekit/stylelint`) — `createStyleLint({ functionalTokens })`
      bans element selectors in CSS (`& svg`, `& span`), bans `!important`, and
      bans functional color tokens inside `@utility` blocks. `functionalTokens`
