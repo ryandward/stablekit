@@ -729,3 +729,83 @@ describe("ternary content in JSX children", () => {
     );
   });
 });
+
+describe("conditional mount via && in JSX children", () => {
+  it("catches {expanded && <Panel/>}", () => {
+    expectError(
+      `<div>{expanded && <Panel />}</div>`,
+      "Conditional mounting",
+    );
+  });
+
+  it("catches {error && <span>msg</span>}", () => {
+    expectError(
+      `<div>{error && <span>Error occurred</span>}</div>`,
+      "Conditional mounting",
+    );
+  });
+
+  it("allows && in attribute (correct pattern)", () => {
+    expectClean(
+      `<StableField error={errors.name && <span>msg</span>} />`,
+    );
+  });
+});
+
+describe("fallback content via || in JSX children", () => {
+  it("catches {name || 'Unknown'}", () => {
+    expectError(
+      `<span>{name || "Unknown"}</span>`,
+      "Fallback content",
+    );
+  });
+
+  it("allows || in attribute", () => {
+    expectClean(
+      `<input placeholder={name || "Enter name"} />`,
+    );
+  });
+});
+
+describe("nullish fallback via ?? in JSX children", () => {
+  it("catches {title ?? 'Loading...'}", () => {
+    expectError(
+      `<h1>{title ?? "Loading..."}</h1>`,
+      "Nullish fallback",
+    );
+  });
+
+  it("allows ?? in attribute", () => {
+    expectClean(
+      `<input value={title ?? ""} />`,
+    );
+  });
+});
+
+describe("interpolated text in JSX children", () => {
+  it("catches template literal with expression", () => {
+    expectError(
+      "<span>{`Charge All (${count})`}</span>",
+      "Interpolated text",
+    );
+  });
+
+  it("catches template literal with multiple expressions", () => {
+    expectError(
+      "<span>{`${qty} items at $${price}`}</span>",
+      "Interpolated text",
+    );
+  });
+
+  it("allows template literal in className attribute", () => {
+    expectClean(
+      "<div className={`base ${layout}`} />",
+    );
+  });
+
+  it("allows .map() in JSX children (not a conditional)", () => {
+    expectClean(
+      `<ul>{items.map(i => <li key={i.id}>{i.name}</li>)}</ul>`,
+    );
+  });
+});

@@ -203,6 +203,30 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
           message:
             "Conditional content causes layout shift. Use <StateSwap> for text, <LayoutMap> for keyed views, or <LoadingBoundary> for async states.",
         },
+        {
+          selector:
+            ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > LogicalExpression[operator='&&']",
+          message:
+            "Conditional mounting causes layout shift. Use <FadeTransition> for enter/exit, <StableField> for form errors, or render all states with <LayoutGroup>.",
+        },
+        {
+          selector:
+            ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > LogicalExpression[operator='||']",
+          message:
+            "Fallback content causes layout shift. Use <StateSwap> to pre-allocate space for both states.",
+        },
+        {
+          selector:
+            ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > LogicalExpression[operator='??']",
+          message:
+            "Nullish fallback causes layout shift. Use <StateSwap> to pre-allocate space for both states.",
+        },
+        {
+          selector:
+            ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > TemplateLiteral",
+          message:
+            "Interpolated text causes layout shift. Use <StableCounter> for numbers or <StateSwap> for text variants.",
+        },
       ],
     },
   };
