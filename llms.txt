@@ -290,16 +290,24 @@ change to structure requires editing `.css`, a boundary has leaked.
      preventing consumers from injecting appearance at the Structure layer.
   2. CSS uses `[data-variant="..."]` attribute selectors to map contract values
      to visual styles.
-  3. **ESLint** (`stablekit/eslint`) — `createArchitectureLint({ stateTokens, variantProps })`
+  3. **ESLint** (`stablekit/eslint`) — `createArchitectureLint({ stateTokens, variantProps, banColorUtilities })`
      bans data-dependent visual properties in JS (state tokens like
      `text-success`, conditional style ternaries), hardcoded visual values
      (bare hex colors like `"#f0c040"`, color functions like `rgba()`, `hsl()`,
      `oklch()`), color properties in style props (`style={{ color: x }}`),
-     and className ternaries (`className={x ? "a" : "b"}`). If you're
-     switching classes with a ternary, the visual decision is in JS — use a
-     data-attribute and CSS selector instead. `stateTokens` declares your
-     project's functional color vocabulary. `variantProps` declares prop names
-     from `createPrimitive` — bans ternaries like `intent={x ? "primary" : "outline"}`.
+     visual state properties in style props (`style={{ opacity, visibility,
+     transition, pointerEvents }}`), className ternaries
+     (`className={x ? "a" : "b"}`), className logical AND
+     (`className={cn("base", x && "bold")}`), className object syntax
+     (`cx({ class: condition })`), `!important` in className, hardcoded
+     z-index (`z-[999]`), negative margins (`m-[-4px]`), hardcoded pixel
+     dimensions (`w-[347px]`), and all arbitrary magic numbers in Tailwind
+     bracket syntax. `banColorUtilities` (default: true) bans ALL Tailwind
+     palette color utilities in className (`bg-red-500`, `text-green-600`,
+     `border-cyan-400`, etc.) — colors must live in CSS, not in component
+     classNames. `stateTokens` declares your project's functional color
+     vocabulary. `variantProps` declares prop names from `createPrimitive` —
+     bans ternaries like `intent={x ? "primary" : "outline"}`.
   4. **Stylelint** (`stablekit/stylelint`) — `createStyleLint({ functionalTokens })`
      bans element selectors in CSS (`& svg`, `& span`), bans `!important`, and
      bans functional color tokens inside `@utility` blocks. `functionalTokens`

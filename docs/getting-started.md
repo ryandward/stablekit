@@ -57,6 +57,12 @@ createArchitectureLint({
   // visual decision is in JS.
   variantProps: ["variant", "intent"],
 
+  // Optional: ban all Tailwind color palette utilities in className.
+  // Catches bg-red-500, text-green-600, border-cyan-400, etc.
+  // Colors must live in CSS, not in component classNames.
+  // Default: true (opt-out, not opt-in)
+  banColorUtilities: true,
+
   // Optional: which files to lint.
   // Default: ["src/components/**/*.{tsx,jsx}"]
   files: ["src/**/*.{jsx,tsx}"],
@@ -99,6 +105,7 @@ These are magic numbers and raw color values that should be design tokens.
 | Negative margin | `m-[-4px]`, `-mt-[8px]` | Fix the spacing structure instead of fighting it |
 | Color in style prop | `style={{ color: x }}` | Use `data-*` attribute + CSS selector |
 | Visual state in style prop | `style={{ opacity: 0.5 }}` | Use `data-*` attribute + CSS selector |
+| Tailwind color utility | `className="bg-red-500"` | Use a CSS class with a custom property or data-attribute selector |
 
 ### Data-dependent visual decisions
 
