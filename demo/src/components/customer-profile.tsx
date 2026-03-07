@@ -3,7 +3,6 @@ import { LoadingBoundary, StableText, MediaSkeleton, LayoutMap } from "stablekit
 import { useStableKitMode } from "@/context/stablekit-mode";
 import { SKLabel } from "@/components/sk-label";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import type { Customer } from "@/data/customers";
 
 interface CustomerProfileProps {
@@ -121,12 +120,8 @@ function TabBar({ activeTab, onTabChange }: { activeTab: Tab; onTabChange: (tab:
           key={tab}
           type="button"
           onClick={() => onTabChange(tab)}
-          className={cn(
-            "pb-2.5 text-body-sm font-medium capitalize sk-transition-colors",
-            activeTab === tab
-              ? "border-b-2 border-brand text-foreground"
-              : "text-muted-foreground hover:text-foreground",
-          )}
+          className="sk-tab-btn pb-2.5 text-body-sm font-medium capitalize sk-transition-colors"
+          data-active={activeTab === tab}
         >
           {tab}
         </button>

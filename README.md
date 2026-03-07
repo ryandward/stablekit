@@ -144,7 +144,7 @@ export default [
 
 `variantProps` declares the prop names from your `createPrimitive` calls. The linter flags ternaries on these props — `intent={x ? "primary" : "outline"}` is a visual decision in JS. If a variant changes based on data, the component should use a data-attribute and CSS should handle the visual difference.
 
-It also catches hardcoded hex/rgba colors and conditional style ternaries universally.
+It also catches universally: bare hex color literals (`"#f0c040"`), color functions (`rgba()`, `hsl()`, `oklch()`), color properties in style props (`style={{ color: x }}`), className ternaries (`className={x ? "a" : "b"}`), and conditional style ternaries.
 
 **Stylelint** (`stablekit/stylelint`) — catches CSS targeting child elements by tag name:
 

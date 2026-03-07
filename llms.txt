@@ -292,10 +292,14 @@ change to structure requires editing `.css`, a boundary has leaked.
      to visual styles.
   3. **ESLint** (`stablekit/eslint`) — `createArchitectureLint({ stateTokens, variantProps })`
      bans data-dependent visual properties in JS (state tokens like
-     `text-success`, conditional style ternaries) and hardcoded visual values
-     (`rgba()`, hex codes). `stateTokens` declares your project's functional
-     color vocabulary. `variantProps` declares prop names from `createPrimitive`
-     — bans ternaries like `intent={x ? "primary" : "outline"}`.
+     `text-success`, conditional style ternaries), hardcoded visual values
+     (bare hex colors like `"#f0c040"`, color functions like `rgba()`, `hsl()`,
+     `oklch()`), color properties in style props (`style={{ color: x }}`),
+     and className ternaries (`className={x ? "a" : "b"}`). If you're
+     switching classes with a ternary, the visual decision is in JS — use a
+     data-attribute and CSS selector instead. `stateTokens` declares your
+     project's functional color vocabulary. `variantProps` declares prop names
+     from `createPrimitive` — bans ternaries like `intent={x ? "primary" : "outline"}`.
   4. **Stylelint** (`stablekit/stylelint`) — `createStyleLint({ functionalTokens })`
      bans element selectors in CSS (`& svg`, `& span`), bans `!important`, and
      bans functional color tokens inside `@utility` blocks. `functionalTokens`

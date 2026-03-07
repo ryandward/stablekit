@@ -377,6 +377,21 @@ body {
 }
 
 /* OFF path: keyframes (entrance only — no exit animation on unmount) */
+/* ── Tab button: active/inactive via data-attribute ── */
+
+.sk-tab-btn {
+  color: var(--color-muted-foreground);
+}
+
+.sk-tab-btn:hover {
+  color: var(--color-foreground);
+}
+
+.sk-tab-btn[data-active="true"] {
+  border-bottom: 2px solid var(--color-brand);
+  color: var(--color-foreground);
+}
+
 @keyframes sk-morph-in {
   from { transform: scale(0.8) rotate(-45deg); opacity: 0; }
   to   { transform: scale(1) rotate(0deg); opacity: 1; }

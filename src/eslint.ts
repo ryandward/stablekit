@@ -2,10 +2,11 @@
  * Architecture Linter Factory
  *
  * Creates an ESLint flat config that enforces the Structure → Presentation
- * boundary. Three categories of violation:
+ * boundary. Four categories of violation:
  *
- * 1. Hardcoded design tokens — raw font sizes, hex/rgba colors in JS.
- *    These are universal rules that apply to every project.
+ * 1. Hardcoded visual values — bare hex colors (#f0c040), color functions
+ *    (rgba, hsl, oklch), font sizes in Tailwind arbitrary values, and
+ *    color properties (color, backgroundColor, etc.) set via the style prop.
  *
  * 2. Data-dependent visual decisions — state color tokens in className
  *    strings and conditional style ternaries. The token list is
@@ -61,6 +62,27 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
           message:
             "Hardcoded color value in style object. Define a CSS custom property.",
         },
+        {
+          selector:
+            "Literal[value=/^#[0-9a-fA-F]{3}([0-9a-fA-F]([0-9a-fA-F]{2}([0-9a-fA-F]{2})?)?)?$/]",
+          message:
+            "Hardcoded hex color. Define a CSS custom property.",
+        },
+        {
+          selector:
+            "Literal[value=/(?:^|[^a-zA-Z])(?:rgba?|hsla?|oklch|lab|lch)\\(/]",
+          message:
+            "Hardcoded color function. Define a CSS custom property.",
+        },
+
+        // --- 1b. Color properties in style props ---
+
+        {
+          selector:
+            "JSXAttribute[name.name='style'] Property[key.name=/^(color|backgroundColor|background|borderColor|outlineColor|fill|stroke)$/]",
+          message:
+            "Visual color property in style prop. Use a data-attribute and CSS selector.",
+        },
 
         // --- 2. Data-dependent visual decisions (project-specific) ---
 
@@ -77,6 +99,12 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
           selector: "JSXAttribute[name.name='style'] ConditionalExpression",
           message:
             "Conditional style object. Use a data-state attribute and CSS selector.",
+        },
+        {
+          selector:
+            "JSXAttribute[name.name='className'] ConditionalExpression",
+          message:
+            "Conditional className. Use a data-attribute and CSS selector instead of switching classes with a ternary.",
         },
 
         // --- 3. Ternaries on variant props (from createPrimitive) ---
