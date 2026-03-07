@@ -7,38 +7,38 @@ export function ModeToggle() {
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <span className="text-xs font-medium tracking-widest uppercase text-muted-foreground">
+      <span className="text-[11px] font-semibold tracking-[0.12em] uppercase text-muted-foreground/60">
         stablekit
       </span>
-      <div className="relative h-12 w-72 rounded-full bg-slate-100 p-1 border border-border flex">
-        {/* Sliding background indicator */}
+      <div className="relative flex h-10 w-56 rounded-full border border-border/40 bg-muted/60 p-1 backdrop-blur-sm">
+        {/* Sliding indicator */}
         <div
           className={cn(
-            "absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]",
+            "absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full transition-all duration-300 ease-standard",
             enabled
-              ? "left-[calc(50%+2px)] bg-gradient-to-r from-indigo-500 to-violet-500 shadow-md"
-              : "left-1 bg-white shadow-sm",
+              ? "left-[calc(50%+2px)] bg-gradient-to-r from-brand-from to-brand-to shadow-[0_1px_4px_rgba(91,74,238,0.3)]"
+              : "left-1 bg-card shadow-[0_1px_2px_rgba(0,0,0,0.06)]",
           )}
         />
         <button
           type="button"
           onClick={enabled ? toggle : undefined}
           className={cn(
-            "relative z-10 flex-1 rounded-full px-6 py-2 text-sm font-semibold transition-colors duration-200",
-            !enabled ? "text-zinc-900" : "text-muted-foreground",
+            "relative z-10 flex-1 rounded-full text-[13px] font-semibold transition-colors duration-200 ease-standard",
+            !enabled ? "text-foreground" : "text-muted-foreground",
           )}
         >
-          OFF
+          Off
         </button>
         <button
           type="button"
           onClick={!enabled ? toggle : undefined}
           className={cn(
-            "relative z-10 flex-1 rounded-full px-6 py-2 text-sm font-semibold transition-colors duration-200",
-            enabled ? "text-white" : "text-muted-foreground",
+            "relative z-10 flex-1 rounded-full text-[13px] font-semibold transition-colors duration-200 ease-standard",
+            enabled ? "text-brand-foreground" : "text-muted-foreground",
           )}
         >
-          ON
+          On
         </button>
       </div>
       <CLSCounter />

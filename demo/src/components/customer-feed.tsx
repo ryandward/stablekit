@@ -6,8 +6,8 @@ import { customers } from "@/data/customers";
 import { CustomerCard } from "@/components/customer-card";
 
 export function CustomerFeed() {
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const { enabled } = useStableKitMode();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const handleToggle = (id: string) => {
     setExpandedId((prev) => (prev === id ? null : id));
@@ -23,22 +23,20 @@ export function CustomerFeed() {
   ));
 
   return (
-    <section className="py-16 px-4">
+    <section className="py-16 px-6">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-3 pb-4 border-b border-border">
-          <h2 className="text-2xl font-semibold tracking-tight">
+        <div className="flex items-center gap-3 pb-4 border-b border-border/40">
+          <h2 className="text-xl font-semibold tracking-[-0.04em]">
             Customer Directory
           </h2>
-          <span className="text-xs text-muted-foreground bg-muted rounded-full px-2.5 py-0.5">
+          <span className="text-[11px] font-medium text-muted-foreground bg-muted rounded-full px-2.5 py-1">
             {customers.length} accounts
           </span>
-          {enabled && (
-            <SKLabel component="SizeRatchet" paradigm="monotonic" />
-          )}
+          <SKLabel component="SizeRatchet" paradigm="monotonic" />
         </div>
 
-        {/* Card list */}
+        {/* Card list — SizeRatchet when stable, raw div when naive */}
         {enabled ? (
           <SizeRatchet axis="height">
             <div className="space-y-3 mt-10">{cardList}</div>

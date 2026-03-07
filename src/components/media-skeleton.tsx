@@ -2,7 +2,11 @@ import {
   Children,
   cloneElement,
   isValidElement,
+  useCallback,
+  useEffect,
   useInsertionEffect,
+  useRef,
+  useState,
   type HTMLAttributes,
   type ReactElement,
   type CSSProperties,
@@ -47,6 +51,10 @@ const CHILD_STYLE: CSSProperties = {
  * before media loads. Enforces child constraints via `cloneElement`
  * inline styles — no CSS `!important`, no developer discipline needed.
  *
+ * The shimmer stays visible until **both** the loading context resolves
+ * AND the child media fires `onLoad`. This prevents an empty-frame
+ * flash between skeleton exit and image paint.
+ *
  * The child can override `objectFit` (e.g. `contain`) via its own
  * inline `style` prop, but positional constraints are non-negotiable.
  *
@@ -76,6 +84,27 @@ export function MediaSkeleton({
   const contextLoading = useLoadingState();
   const isLoading = loading ?? contextLoading;
 
+  const [mediaReady, setMediaReady] = useState(false);
+  const childRef = useRef<HTMLElement>(null);
+
+  // Reset readiness when entering a loading state
+  useEffect(() => {
+    if (isLoading) setMediaReady(false);
+  }, [isLoading]);
+
+  // Check if a cached image is already complete on mount / after loading flips
+  useEffect(() => {
+    const el = childRef.current;
+    if (el instanceof HTMLImageElement && el.complete && el.naturalWidth > 0) {
+      setMediaReady(true);
+    }
+  });
+
+  const handleLoad = useCallback(() => setMediaReady(true), []);
+
+  // Shimmer stays until both context resolves AND media has painted
+  const showShimmer = isLoading || !mediaReady;
+
   const containerStyle: CSSProperties = {
     position: "relative",
     overflow: "hidden",
@@ -83,7 +112,7 @@ export function MediaSkeleton({
     ...style,
   };
 
-  const containerClass = isLoading
+  const containerClass = showShimmer
     ? className
       ? `sk-media sk-media-loading ${className}`
       : "sk-media sk-media-loading"
@@ -92,12 +121,21 @@ export function MediaSkeleton({
       : "sk-media";
 
   const child = Children.only(children);
+  const existingOnLoad = (child.props as Record<string, unknown>).onLoad as
+    | ((e: React.SyntheticEvent) => void)
+    | undefined;
+
   const clonedChild = isValidElement(child)
     ? cloneElement(child, {
+        ref: childRef,
+        onLoad: (e: React.SyntheticEvent) => {
+          handleLoad();
+          existingOnLoad?.(e);
+        },
         style: {
           ...CHILD_STYLE,
-          opacity: isLoading ? 0 : 1,
-          transition: "opacity 0.2s ease-in-out",
+          opacity: showShimmer ? 0 : 1,
+          transition: "opacity var(--sk-exit-duration, 150ms) ease-out",
           ...(child.props as { style?: CSSProperties }).style,
         },
       } as Record<string, unknown>)
@@ -105,7 +143,11 @@ export function MediaSkeleton({
 
   return (
     <div className={containerClass} style={containerStyle} {...props}>
-      {isLoading && <div className="sk-media-shimmer" />}
+      <div
+        className="sk-media-shimmer"
+        aria-hidden="true"
+        style={{ opacity: showShimmer ? 1 : 0 }}
+      />
       {clonedChild}
     </div>
   );

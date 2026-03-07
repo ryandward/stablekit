@@ -6,10 +6,10 @@ import {
   type ReactNode,
   type ReactElement,
   type Ref,
+  type CSSProperties,
 } from "react";
 import { SizeRatchet } from "./size-ratchet";
 import { SkeletonGrid } from "./skeleton-grid";
-import { useLoadingExit } from "../primitives/use-loading-exit";
 import { injectStyles } from "../internal/inject-styles";
 
 export interface CollectionSkeletonProps<T> extends Omit<HTMLAttributes<HTMLElement>, "children"> {
@@ -21,7 +21,7 @@ export interface CollectionSkeletonProps<T> extends Omit<HTMLAttributes<HTMLElem
   renderItem: (item: T, index: number) => ReactNode;
   /** Number of placeholder rows during loading. */
   stubCount: number;
-  /** Exit animation duration in ms. Must match CSS --sk-exit-duration. */
+  /** Crossfade duration in ms. Sets --sk-exit-duration for the opacity transition. */
   exitDuration: number;
   /** HTML element to render. Default: "div". */
   as?: ElementType;
@@ -36,27 +36,35 @@ function CollectionSkeletonInner<T>(
     exitDuration,
     as: Tag = "div",
     className,
+    style,
     ...props
   }: CollectionSkeletonProps<T>,
   ref: Ref<HTMLElement>
 ) {
   useInsertionEffect(injectStyles, []);
 
-  const { showSkeleton, exiting } = useLoadingExit(loading, exitDuration);
-
-  const exitClass = exiting
-    ? className ? `sk-loading-exiting ${className}` : "sk-loading-exiting"
-    : className;
+  const merged = {
+    ...style,
+    display: "grid",
+    '--sk-exit-duration': `${exitDuration}ms`,
+  } as CSSProperties;
 
   return (
-    <SizeRatchet ref={ref} axis="height" as={Tag} {...props}>
-      {showSkeleton ? (
-        <SkeletonGrid rows={stubCount} className={exitClass} />
-      ) : (
-        <Tag className={className}>
-          {items.map(renderItem)}
-        </Tag>
-      )}
+    <SizeRatchet ref={ref} axis="height" as={Tag} className={className} style={merged} {...props}>
+      <div
+        className="sk-loading-layer"
+        aria-hidden="true"
+        style={{ opacity: loading ? 1 : 0 }}
+      >
+        <SkeletonGrid rows={stubCount} />
+      </div>
+      <div
+        className="sk-loading-layer"
+        style={{ opacity: loading ? 0 : 1 }}
+        inert={loading || undefined}
+      >
+        {items.map(renderItem)}
+      </div>
     </SizeRatchet>
   );
 }
@@ -64,9 +72,11 @@ function CollectionSkeletonInner<T>(
 /**
  * Loading-aware list with automatic skeleton stubs.
  *
- * Shows shimmer skeleton while loading, then transitions to rendered items.
- * Wrapped in a SizeRatchet so the container never shrinks during the
- * skeleton-to-content swap.
+ * Both the skeleton grid and rendered items are permanently mounted
+ * in the DOM, stacked via CSS grid overlap. Loading state controls
+ * only opacity and interactivity. CSS transitions handle the crossfade.
+ *
+ * Wrapped in a SizeRatchet so the container never shrinks.
  *
  * @example
  * ```tsx

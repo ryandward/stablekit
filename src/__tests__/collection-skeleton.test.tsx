@@ -8,6 +8,20 @@ describe("CollectionSkeleton", () => {
     { id: 2, name: "Bob" },
   ];
 
+  it("both layers always present in DOM", () => {
+    const { container } = render(
+      <CollectionSkeleton
+        items={items}
+        loading={false}
+        stubCount={3}
+        exitDuration={0}
+        renderItem={(item) => <p key={item.id}>{item.name}</p>}
+      />
+    );
+    expect(container.querySelector(".sk-skeleton-grid")).toBeTruthy();
+    expect(screen.getByText("Alice")).toBeInTheDocument();
+  });
+
   it("shows skeleton grid when loading", () => {
     const { container } = render(
       <CollectionSkeleton
@@ -20,10 +34,12 @@ describe("CollectionSkeleton", () => {
     );
     expect(container.querySelector(".sk-skeleton-grid")).toBeTruthy();
     expect(container.querySelectorAll(".sk-skeleton-bone")).toHaveLength(3);
+    const skeletonLayer = container.querySelector(".sk-skeleton-grid")!.parentElement as HTMLElement;
+    expect(skeletonLayer.style.opacity).toBe("1");
   });
 
   it("renders items when not loading", () => {
-    render(
+    const { container } = render(
       <CollectionSkeleton
         items={items}
         loading={false}
@@ -34,7 +50,8 @@ describe("CollectionSkeleton", () => {
     );
     expect(screen.getByText("Alice")).toBeInTheDocument();
     expect(screen.getByText("Bob")).toBeInTheDocument();
-    expect(document.querySelector(".sk-skeleton-grid")).toBeNull();
+    const skeletonLayer = container.querySelector(".sk-skeleton-grid")!.parentElement as HTMLElement;
+    expect(skeletonLayer.style.opacity).toBe("0");
   });
 
   it("wraps in SizeRatchet", () => {

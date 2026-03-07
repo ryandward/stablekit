@@ -39,40 +39,15 @@ export function FieldDemo() {
     setSubmitted(false);
   };
 
-  const errorClass = "text-sm text-red-600 mt-1";
-  const inputClass = "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring transition-shadow";
-
-  const nameField = (
-    <>
-      <label htmlFor="demo-name" className="block text-sm font-medium text-card-foreground mb-1">Name</label>
-      <input
-        id="demo-name"
-        name="name"
-        type="text"
-        placeholder="Jane Doe"
-        className={cn(inputClass, errors.name && "border-red-400")}
-      />
-    </>
-  );
-
-  const emailField = (
-    <>
-      <label htmlFor="demo-email" className="block text-sm font-medium text-card-foreground mb-1">Email</label>
-      <input
-        id="demo-email"
-        name="email"
-        type="email"
-        placeholder="jane@example.com"
-        className={cn(inputClass, errors.email && "border-red-400")}
-      />
-    </>
-  );
+  const errorClass = "text-[12px] text-destructive mt-1";
+  const inputClass =
+    "w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm outline-none transition-shadow duration-200 ease-standard focus:ring-2 focus:ring-ring/30 focus:border-brand/40";
 
   return (
-    <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-medium text-muted-foreground">Edit Customer</h3>
-        {enabled && <SKLabel component="StableField" paradigm="spatial" />}
+    <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm transition duration-300 ease-standard hover:-translate-y-0.5 hover:shadow-md">
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-[13px] font-medium text-muted-foreground">Edit Customer</h3>
+        <SKLabel component="StableField" paradigm="spatial" />
       </div>
       <form onSubmit={handleSubmit} onReset={handleReset} className="space-y-3">
         {enabled ? (
@@ -81,46 +56,75 @@ export function FieldDemo() {
               error={errors.name && <span className={errorClass}>{errors.name}</span>}
               reserve={<span className={errorClass}>{RESERVE_NAME}</span>}
             >
-              {nameField}
+              <label htmlFor="demo-name" className="block text-[13px] font-medium text-card-foreground mb-1">Name</label>
+              <input
+                id="demo-name"
+                name="name"
+                type="text"
+                placeholder="Jane Doe"
+                className={cn(inputClass, errors.name && "border-destructive/60")}
+              />
             </StableField>
             <StableField
               error={errors.email && <span className={errorClass}>{errors.email}</span>}
               reserve={<span className={errorClass}>{RESERVE_EMAIL}</span>}
             >
-              {emailField}
+              <label htmlFor="demo-email" className="block text-[13px] font-medium text-card-foreground mb-1">Email</label>
+              <input
+                id="demo-email"
+                name="email"
+                type="email"
+                placeholder="jane@example.com"
+                className={cn(inputClass, errors.email && "border-destructive/60")}
+              />
             </StableField>
           </>
         ) : (
           <>
+            {/* Naive path — no error slot pre-allocation. Button jumps. */}
             <div>
-              {nameField}
-              {errors.name && <p className={errorClass}>{errors.name}</p>}
+              <label htmlFor="demo-name" className="block text-[13px] font-medium text-card-foreground mb-1">Name</label>
+              <input
+                id="demo-name"
+                name="name"
+                type="text"
+                placeholder="Jane Doe"
+                className={cn(inputClass, errors.name && "border-destructive/60")}
+              />
+              {errors.name && <span className={errorClass}>{errors.name}</span>}
             </div>
             <div>
-              {emailField}
-              {errors.email && <p className={errorClass}>{errors.email}</p>}
+              <label htmlFor="demo-email" className="block text-[13px] font-medium text-card-foreground mb-1">Email</label>
+              <input
+                id="demo-email"
+                name="email"
+                type="email"
+                placeholder="jane@example.com"
+                className={cn(inputClass, errors.email && "border-destructive/60")}
+              />
+              {errors.email && <span className={errorClass}>{errors.email}</span>}
             </div>
           </>
         )}
         <div className="flex gap-2 pt-1">
           <button
             type="submit"
-            className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground hover:bg-brand-hover transition-colors"
+            className="rounded-lg bg-brand px-4 py-2 text-[13px] font-semibold text-brand-foreground hover:bg-brand-hover transition-colors duration-200 ease-standard"
           >
             {submitted ? "Saved!" : "Save"}
           </button>
           <button
             type="reset"
-            className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
+            className="rounded-lg border border-border/60 px-4 py-2 text-[13px] font-medium text-muted-foreground hover:bg-muted transition-colors duration-200 ease-standard"
           >
             Reset
           </button>
         </div>
       </form>
-      <p className="mt-3 text-xs text-muted-foreground">
+      <p className="mt-4 text-[12px] leading-relaxed text-muted-foreground/60">
         {enabled
           ? "Error slot height is pre-allocated. The button never moves."
-          : "Submit empty to see errors push the button down."}
+          : "No error space reserved \u2014 submit empty to watch the button jump."}
       </p>
     </div>
   );

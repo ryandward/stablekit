@@ -3,33 +3,36 @@ import {
   useInsertionEffect,
   type HTMLAttributes,
   type ElementType,
+  type CSSProperties,
 } from "react";
 import { SizeRatchet } from "./size-ratchet";
 import { LoadingContext } from "./loading-context";
-import { useLoadingExit } from "../primitives/use-loading-exit";
 import { injectStyles } from "../internal/inject-styles";
 
 export interface LoadingBoundaryProps extends HTMLAttributes<HTMLElement> {
   /** Whether data is loading. Sets LoadingContext for all nested components. */
   loading: boolean;
-  /** Exit animation duration in ms. Must match CSS --sk-exit-duration. */
+  /**
+   * Crossfade duration in ms. Sets `--sk-exit-duration` on the container
+   * so all nested skeleton transitions use the same timing.
+   */
   exitDuration: number;
   /** HTML element to render. Default: "div". */
   as?: ElementType;
 }
 
 /**
- * Loading orchestrator — shimmer + ratchet in one component.
+ * Loading orchestrator — context + ratchet in one component.
  *
- * Composes three behaviors:
- * - **LoadingContext**: every nested `<TextSkeleton>` and `<StableText>`
- *   reads loading state automatically.
- * - **SizeRatchet**: container never shrinks during the shimmer-to-content swap.
- * - **Exit transition**: applies `sk-loading-exiting` class during the
- *   fade-out so shimmer lines animate before real content mounts.
+ * Composes two behaviors:
+ * - **LoadingContext**: every nested `<TextSkeleton>`, `<StableText>`,
+ *   and `<MediaSkeleton>` reads loading state automatically.
+ * - **SizeRatchet**: container never shrinks during transitions.
  *
- * Write one JSX tree for both states. StableText/TextSkeleton instances
- * handle the visual toggle.
+ * Skeleton components handle their own crossfade via CSS opacity
+ * transitions on permanently-mounted layers. The `exitDuration` prop
+ * sets `--sk-exit-duration` on the container so all nested transitions
+ * use the same timing.
  *
  * @example
  * ```tsx
@@ -43,18 +46,17 @@ export interface LoadingBoundaryProps extends HTMLAttributes<HTMLElement> {
  * ```
  */
 export const LoadingBoundary = forwardRef<HTMLElement, LoadingBoundaryProps>(
-  function LoadingBoundary({ loading, exitDuration, as: Tag = "div", className, children, ...props }, ref) {
+  function LoadingBoundary({ loading, exitDuration, as: Tag = "div", className, style, children, ...props }, ref) {
     useInsertionEffect(injectStyles, []);
 
-    const { showSkeleton, exiting } = useLoadingExit(loading, exitDuration);
-
-    const merged = exiting
-      ? className ? `sk-loading-exiting ${className}` : "sk-loading-exiting"
-      : className;
+    const merged = {
+      ...style,
+      '--sk-exit-duration': `${exitDuration}ms`,
+    } as CSSProperties;
 
     return (
-      <SizeRatchet ref={ref} axis="height" as={Tag} className={merged} {...props}>
-        <LoadingContext loading={showSkeleton}>
+      <SizeRatchet ref={ref} axis="height" as={Tag} className={className} style={merged} {...props}>
+        <LoadingContext loading={loading}>
           {children}
         </LoadingContext>
       </SizeRatchet>

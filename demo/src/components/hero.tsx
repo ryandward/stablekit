@@ -1,68 +1,48 @@
-import { ChevronDown } from "lucide-react";
-import { useStableKitMode } from "@/context/stablekit-mode";
-
 export function Hero() {
-  const { enabled } = useStableKitMode();
-
   return (
-    <section className="relative overflow-hidden py-28 lg:py-40">
-      {/* Radial gradient background */}
+    <section className="relative overflow-hidden pt-32 pb-20 lg:pt-44 lg:pb-28">
+      {/* Ambient indigo glow */}
       <div
-        className="absolute inset-0 -z-20 bg-[radial-gradient(ellipse_at_center,var(--color-hero-from)_0%,transparent_70%)]"
-        aria-hidden="true"
-      />
-
-      {/* Dot grid pattern */}
-      <div
-        className="absolute inset-0 -z-10 opacity-40"
+        className="pointer-events-none absolute inset-0 -z-10"
         style={{
-          backgroundImage:
-            "radial-gradient(circle, #e2e8f0 1px, transparent 1px)",
-          backgroundSize: "24px 24px",
+          background:
+            "radial-gradient(ellipse 70% 50% at 50% -10%, rgba(99, 102, 241, 0.07), transparent)",
         }}
         aria-hidden="true"
       />
 
-      {/* Content */}
-      <div className="mx-auto max-w-3xl px-4 text-center">
+      <div className="mx-auto max-w-4xl px-6 text-center">
         {/* Pill badge */}
-        <span className="inline-block rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground">
+        <div className="inline-flex items-center gap-2 rounded-full border border-border/50 bg-card px-3.5 py-1.5 text-[13px] font-medium text-muted-foreground shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <span className="relative flex size-1.5">
+            <span className="absolute inline-flex size-full animate-ping rounded-full bg-brand opacity-40" />
+            <span className="relative inline-flex size-1.5 rounded-full bg-brand" />
+          </span>
           React Layout Stability
-        </span>
+        </div>
 
         {/* Headline */}
-        <h1 className="mt-6 text-5xl font-semibold leading-[1.1] tracking-tight text-balance sm:text-6xl">
-          Layout shift isn&rsquo;t a state problem. It&rsquo;s a structural
-          problem.
+        <h1
+          className="mx-auto mt-8 font-semibold leading-[0.95] tracking-[-0.04em] text-foreground text-balance"
+          style={{ fontSize: "clamp(2.75rem, 6vw, 4.5rem)" }}
+        >
+          Layout shift isn&rsquo;t a state&nbsp;problem.
+          <br className="hidden sm:block" />
+          It&rsquo;s structural.
         </h1>
 
-        {/* Subheadline - contextual based on mode */}
-        {!enabled ? (
-          <div className="mx-auto mt-6 max-w-2xl space-y-3">
-            <p className="text-lg text-muted-foreground text-balance">
-              Scroll down. Expand a customer card. Switch tabs. Watch the page
-              jump, the spinner pop, the content reflow.
-            </p>
-            <p className="text-sm font-medium text-brand">
-              Then flip StableKit ON and do it again.
-            </p>
-          </div>
-        ) : (
-          <div className="mx-auto mt-6 max-w-2xl space-y-3">
-            <p className="text-lg text-muted-foreground text-balance">
-              Same cards. Same data. Same interactions. Zero layout shift.
-              Geometry is pre-allocated before data arrives.
-            </p>
-            <p className="text-sm font-medium text-emerald-600">
-              Look for the component labels showing what StableKit is doing.
-            </p>
-          </div>
-        )}
+        {/* Subtext */}
+        <p className="mx-auto mt-7 max-w-lg text-[1.125rem] leading-[1.65] text-muted-foreground">
+          Pre-allocate geometry before data arrives. Expand cards, switch tabs,
+          watch counters change&thinsp;&mdash;&thinsp;zero layout shift, by
+          construction.
+        </p>
 
-        {/* Scroll indicator */}
-        <div className="mt-10">
-          <ChevronDown className="mx-auto size-5 animate-bounce text-muted-foreground/40" />
-        </div>
+        {/* CTA hint */}
+        <p className="mt-10 text-[13px] font-medium tracking-[0.08em] uppercase text-brand/70">
+          Toggle StableKit off to see the layout break
+          <span className="ml-1.5 inline-block translate-y-px">&darr;</span>
+        </p>
       </div>
     </section>
   );

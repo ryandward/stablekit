@@ -17,10 +17,11 @@ export interface TextSkeletonProps extends HTMLAttributes<HTMLElement> {
 /**
  * Inline loading shimmer for text.
  *
- * When loading, renders children as an inert ghost inside a shimmer.
- * The ghost gives the shimmer its intrinsic width — exactly as wide
- * as the text it replaces. No forced width, no layout blow-out in
- * flex or inline contexts.
+ * Both shimmer and content layers are permanently mounted in the DOM,
+ * stacked via `display: inline-grid` at `grid-area: 1/1`. Loading
+ * state controls only opacity and interactivity (`inert`). CSS
+ * transitions handle the crossfade — no JS state machine, no
+ * structural mutation, no flash.
  *
  * The className is passed through so `1lh` inherits the correct font
  * metrics from the consuming context.
@@ -33,26 +34,27 @@ export interface TextSkeletonProps extends HTMLAttributes<HTMLElement> {
  * <TextSkeleton loading={isLoading}>{user.name}</TextSkeleton>
  * ```
  */
-export function TextSkeleton({ loading, as: Tag = "span", className, children, ...props }: TextSkeletonProps) {
+export function TextSkeleton({ loading, as: Tag = "span", className, style, children, ...props }: TextSkeletonProps) {
   useInsertionEffect(injectStyles, []);
   const contextLoading = useLoadingState();
   const isLoading = loading ?? contextLoading;
 
-  if (isLoading) {
-    const merged = className
-      ? `sk-shimmer-line ${className}`
-      : "sk-shimmer-line";
-
-    return (
-      <Tag className={merged} {...props}>
-        <Tag inert>{children}</Tag>
-      </Tag>
-    );
-  }
-
   return (
-    <Tag className={className} {...props}>
-      {children}
+    <Tag className={className} style={{ ...style, display: "inline-grid" }} {...props}>
+      <span
+        className="sk-shimmer-line sk-loading-layer"
+        aria-hidden="true"
+        style={{ opacity: isLoading ? 1 : 0 }}
+      >
+        <span inert>{children}</span>
+      </span>
+      <span
+        className="sk-loading-layer"
+        style={{ opacity: isLoading ? 0 : 1 }}
+        inert={isLoading || undefined}
+      >
+        {children}
+      </span>
     </Tag>
   );
 }

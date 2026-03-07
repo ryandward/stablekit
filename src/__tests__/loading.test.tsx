@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
   LoadingBoundary,
   LoadingContext,
@@ -39,37 +39,60 @@ describe("LoadingContext", () => {
 });
 
 describe("TextSkeleton", () => {
-  it("renders children when not loading", () => {
-    render(<TextSkeleton loading={false}>Hello</TextSkeleton>);
-    expect(screen.getByText("Hello")).toBeInTheDocument();
-    expect(document.querySelector(".sk-shimmer-line")).toBeNull();
+  it("both layers always present in DOM", () => {
+    const { container } = render(<TextSkeleton loading={false}>Hello</TextSkeleton>);
+    expect(container.querySelector(".sk-shimmer-line")).toBeTruthy();
+    expect(container.querySelector(".sk-loading-layer:not(.sk-shimmer-line)")).toBeTruthy();
   });
 
-  it("renders shimmer with inert ghost when loading", () => {
-    render(<TextSkeleton loading={true}>Hello</TextSkeleton>);
-    expect(document.querySelector(".sk-shimmer-line")).toBeTruthy();
-    const inert = document.querySelector("[inert]");
-    expect(inert).toBeTruthy();
-    expect(inert?.textContent).toBe("Hello");
+  it("uses inline-grid for layer stacking", () => {
+    const { container } = render(<TextSkeleton loading={false}>X</TextSkeleton>);
+    expect((container.firstElementChild as HTMLElement).style.display).toBe("inline-grid");
+  });
+
+  it("shimmer visible and content hidden when loading", () => {
+    const { container } = render(<TextSkeleton loading={true}>Hello</TextSkeleton>);
+    const shimmer = container.querySelector(".sk-shimmer-line") as HTMLElement;
+    expect(shimmer.style.opacity).toBe("1");
+    const content = shimmer.nextElementSibling as HTMLElement;
+    expect(content.style.opacity).toBe("0");
+    expect(content).toHaveAttribute("inert");
+  });
+
+  it("shimmer hidden and content visible when not loading", () => {
+    const { container } = render(<TextSkeleton loading={false}>Hello</TextSkeleton>);
+    const shimmer = container.querySelector(".sk-shimmer-line") as HTMLElement;
+    expect(shimmer.style.opacity).toBe("0");
+    const content = shimmer.nextElementSibling as HTMLElement;
+    expect(content.style.opacity).toBe("1");
+    expect(content).not.toHaveAttribute("inert");
+    expect(content.textContent).toBe("Hello");
+  });
+
+  it("shimmer is aria-hidden", () => {
+    const { container } = render(<TextSkeleton loading={false}>X</TextSkeleton>);
+    const shimmer = container.querySelector(".sk-shimmer-line");
+    expect(shimmer).toHaveAttribute("aria-hidden", "true");
   });
 
   it("falls back to LoadingContext", () => {
-    render(
+    const { container } = render(
       <LoadingContext loading={true}>
         <TextSkeleton>Name</TextSkeleton>
       </LoadingContext>
     );
-    expect(document.querySelector(".sk-shimmer-line")).toBeTruthy();
+    const shimmer = container.querySelector(".sk-shimmer-line") as HTMLElement;
+    expect(shimmer.style.opacity).toBe("1");
   });
 
   it("renders as span by default", () => {
     const { container } = render(<TextSkeleton loading={false}>X</TextSkeleton>);
-    expect(container.querySelector("span")).toBeTruthy();
+    expect(container.firstElementChild?.tagName).toBe("SPAN");
   });
 
   it("renders custom element via as prop", () => {
     const { container } = render(<TextSkeleton loading={false} as="div">X</TextSkeleton>);
-    expect(container.querySelector("div")).toBeTruthy();
+    expect(container.firstElementChild?.tagName).toBe("DIV");
   });
 });
 
@@ -84,33 +107,40 @@ describe("StableText", () => {
     expect(container.querySelector("h1")).toBeTruthy();
   });
 
-  it("shows shimmer inside LoadingBoundary", () => {
-    render(
+  it("shows shimmer inside LoadingContext", () => {
+    const { container } = render(
       <LoadingContext loading={true}>
         <StableText as="h2">User Name</StableText>
       </LoadingContext>
     );
-    expect(document.querySelector("h2 .sk-shimmer-line")).toBeTruthy();
+    const shimmer = container.querySelector("h2 .sk-shimmer-line") as HTMLElement;
+    expect(shimmer).toBeTruthy();
+    expect(shimmer.style.opacity).toBe("1");
   });
 
   it("shows content when not loading", () => {
-    render(<StableText>Content</StableText>);
-    expect(screen.getByText("Content")).toBeInTheDocument();
-    expect(document.querySelector(".sk-shimmer-line")).toBeNull();
+    const { container } = render(<StableText>Content</StableText>);
+    // Both layers have the text; content layer is visible
+    const contentLayer = container.querySelector(".sk-loading-layer:not(.sk-shimmer-line)") as HTMLElement;
+    expect(contentLayer.textContent).toBe("Content");
+    expect(contentLayer.style.opacity).toBe("1");
+    const shimmer = container.querySelector(".sk-shimmer-line") as HTMLElement;
+    expect(shimmer.style.opacity).toBe("0");
   });
 });
 
 describe("LoadingBoundary", () => {
   it("renders children with loading context", () => {
-    render(
+    const { container } = render(
       <LoadingBoundary loading={true} exitDuration={150}>
         <StableText as="p">User Name</StableText>
       </LoadingBoundary>
     );
-    expect(document.querySelector(".sk-shimmer-line")).toBeTruthy();
+    const shimmer = container.querySelector(".sk-shimmer-line") as HTMLElement;
+    expect(shimmer.style.opacity).toBe("1");
   });
 
-  it("removes shimmer when loading becomes false", async () => {
+  it("shows content when loading becomes false", () => {
     const { rerender } = render(
       <LoadingBoundary loading={true} exitDuration={0}>
         <StableText as="p">User Name</StableText>
@@ -123,11 +153,12 @@ describe("LoadingBoundary", () => {
       </LoadingBoundary>
     );
 
-    // useLoadingExit uses setTimeout(0) — wait for it to resolve.
-    await vi.waitFor(() => {
-      expect(document.querySelector(".sk-shimmer-line")).toBeNull();
-    });
-    expect(screen.getByText("User Name")).toBeInTheDocument();
+    // No timeout — opacity changes synchronously
+    const shimmer = document.querySelector(".sk-shimmer-line") as HTMLElement;
+    expect(shimmer.style.opacity).toBe("0");
+    const contentLayer = document.querySelector(".sk-loading-layer:not(.sk-shimmer-line)") as HTMLElement;
+    expect(contentLayer.textContent).toBe("User Name");
+    expect(contentLayer.style.opacity).toBe("1");
   });
 
   it("applies sk-size-ratchet class", () => {
@@ -137,5 +168,15 @@ describe("LoadingBoundary", () => {
       </LoadingBoundary>
     );
     expect(container.querySelector(".sk-size-ratchet")).toBeTruthy();
+  });
+
+  it("sets --sk-exit-duration CSS variable", () => {
+    const { container } = render(
+      <LoadingBoundary loading={false} exitDuration={200}>
+        <p>Content</p>
+      </LoadingBoundary>
+    );
+    const ratchet = container.querySelector(".sk-size-ratchet") as HTMLElement;
+    expect(ratchet.style.getPropertyValue("--sk-exit-duration")).toBe("200ms");
   });
 });

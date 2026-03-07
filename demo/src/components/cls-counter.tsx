@@ -38,21 +38,21 @@ export function CLSCounter() {
   const score = cls;
   const rating =
     score === 0
-      ? { label: "None", color: "text-emerald-600 bg-emerald-50 border-emerald-200" }
+      ? { label: "None", color: "text-success bg-success-subtle border-success-border" }
       : score <= 0.1
-        ? { label: "Good", color: "text-emerald-600 bg-emerald-50 border-emerald-200" }
+        ? { label: "Good", color: "text-success bg-success-subtle border-success-border" }
         : score <= 0.25
-          ? { label: "Needs Work", color: "text-amber-600 bg-amber-50 border-amber-200" }
-          : { label: "Poor", color: "text-red-600 bg-red-50 border-red-200" };
+          ? { label: "Needs Work", color: "text-warning bg-warning-subtle border-warning-border" }
+          : { label: "Poor", color: "text-destructive bg-destructive-subtle border-destructive-border" };
 
   return (
-    <div className="flex items-center gap-3">
-      <div className="text-xs text-muted-foreground">
-        Layout Shift (CLS)
-      </div>
-      <div className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold tabular-nums ${rating.color}`}>
+    <div className="flex items-center gap-2.5">
+      <span className="text-[11px] font-medium text-muted-foreground/60">
+        CLS
+      </span>
+      <div className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-semibold tabular-nums ${rating.color}`}>
         <span>{score.toFixed(3)}</span>
-        <span className="font-normal">{rating.label}</span>
+        <span className="font-normal opacity-60">{rating.label}</span>
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { StableCounter } from "stablekit";
 import { useStableKitMode } from "@/context/stablekit-mode";
 import { SKLabel } from "@/components/sk-label";
+import { cn } from "@/lib/utils";
 
 // Values that cross every digit-count boundary so width change is dramatic
 const REVENUE_SEQUENCE = [
@@ -31,36 +32,38 @@ export function CounterDemo() {
   const formatted = `$${revenue.toLocaleString()}`;
 
   return (
-    <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-medium text-muted-foreground">Monthly Revenue</h3>
-        {enabled && <SKLabel component="StableCounter" paradigm="spatial" />}
+    <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm transition duration-300 ease-standard hover:-translate-y-0.5 hover:shadow-md">
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-[13px] font-medium text-muted-foreground">Monthly Revenue</h3>
+        <SKLabel component="StableCounter" paradigm="spatial" />
       </div>
 
-      {/* Inline layout: number + badge side by side. Width changes in the
-          number push the badge around — this is where CLS becomes visible. */}
       <div className="flex items-baseline gap-3">
-        <span className="text-3xl font-bold tabular-nums text-card-foreground">
+        <span className="text-[2rem] font-semibold tabular-nums tracking-[-0.04em] text-card-foreground">
           {enabled ? (
             <StableCounter value={formatted} reserve="$99,999" />
           ) : (
             formatted
           )}
         </span>
-        <span className={`text-sm font-semibold ${isPositive ? "text-emerald-600" : "text-red-600"}`}>
+        <span className={cn(
+          "text-[13px] font-semibold tabular-nums",
+          isPositive ? "text-success" : "text-destructive",
+        )}>
           {enabled ? (
             <StableCounter value={change} reserve="+999%" />
           ) : (
             change
           )}
         </span>
-        <span className="text-sm text-muted-foreground">vs last month</span>
       </div>
 
-      <p className="mt-3 text-xs text-muted-foreground">
+      <p className="mt-1.5 text-[13px] text-muted-foreground">vs last month</p>
+
+      <p className="mt-4 text-[12px] leading-relaxed text-muted-foreground/60">
         {enabled
           ? "Both values are width-locked by their reserve. The badge never shifts."
-          : "Watch the \u201Cvs last month\u201D text jitter as the numbers change width."}
+          : "No width reservation \u2014 watch the badge slide as digits change."}
       </p>
     </div>
   );
