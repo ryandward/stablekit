@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { StableField } from "stablekit";
+import { StateSwap, StableField } from "stablekit";
 import { useStableKitMode } from "@/context/stablekit-mode";
 import { SKLabel } from "@/components/sk-label";
 import { Button } from "@/components/ui/button";
@@ -112,7 +112,7 @@ export function FieldDemo() {
         )}
         <div className="flex gap-2 pt-1">
           <Button type="submit" variant="primary">
-            {submitted ? "Saved!" : "Save"}
+            <StateSwap state={submitted} true="Saved!" false="Save" />
           </Button>
           <Button type="reset" variant="secondary">
             Reset
