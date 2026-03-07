@@ -26,6 +26,11 @@
  * 5. Don't animate layout properties (width, height, margin, padding,
  *    top/right/bottom/left). These trigger reflow on every frame.
  *    Use transform (scaleY, translateY) or opacity instead.
+ *
+ * 6. Don't duplicate rulesets — two selectors with byte-identical
+ *    declarations (after sorting) should be consolidated under one
+ *    shared class name. The warning includes the matched declarations
+ *    so the developer can see why they were flagged.
  */
 
 export interface StyleLintOptions {
@@ -45,6 +50,7 @@ export interface StyleLintOptions {
 
 const pluginRuleName = "stablekit/no-functional-in-utility";
 const descendantColorRuleName = "stablekit/no-descendant-color-in-state";
+const duplicateRulesetRuleName = "stablekit/no-duplicate-ruleset";
 
 /**
  * Stylelint plugin that bans functional color tokens inside @utility blocks.
@@ -142,6 +148,75 @@ function createDescendantColorPlugin() {
   };
 }
 
+/**
+ * Stylelint plugin that flags selectors with identical declarations.
+ *
+ * Sorts declarations alphabetically, joins them into a fingerprint string,
+ * and warns when two selectors produce the same fingerprint. The warning
+ * includes the first selector that matched so the developer can consolidate.
+ */
+function createDuplicateRulesetPlugin() {
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  /** Collect only direct-child declarations and @apply directives (not nested rules). */
+  function directFingerprint(ruleNode: any): string[] {
+    const parts: string[] = [];
+    for (const child of ruleNode.nodes ?? []) {
+      if (child.type === "decl") {
+        parts.push(`${child.prop}: ${child.value}`);
+      } else if (child.type === "atrule" && child.name === "apply") {
+        parts.push(`@apply ${child.params}`);
+      }
+    }
+    return parts;
+  }
+
+  const rule = (enabled: boolean) => {
+    return (
+      root: any,
+      result: { warn: (message: string, options: { node: unknown; word?: string }) => void },
+    ) => {
+      if (!enabled) return;
+
+      // Map fingerprint → first selector that produced it
+      const seen = new Map<string, string>();
+
+      root.walkRules((ruleNode: any) => {
+        // Skip rules inside @keyframes — frames are positional, not semantic
+        if (ruleNode.parent?.type === "atrule" && ruleNode.parent.name === "keyframes") return;
+
+        // Collect only direct children (declarations + @apply), not nested rules
+        const parts = directFingerprint(ruleNode);
+
+        // Skip empty rules or single-declaration rules (too noisy)
+        if (parts.length < 2) return;
+
+        const fingerprint = parts.sort().join("; ");
+        const existing = seen.get(fingerprint);
+
+        if (existing) {
+          const sameSelector = existing === ruleNode.selector;
+          result.warn(
+            sameSelector
+              ? `Redundant rule — "${ruleNode.selector}" is defined multiple times with identical declarations. Remove the duplicate.\n` +
+                `Declarations: ${fingerprint}`
+              : `Duplicate ruleset — "${ruleNode.selector}" has identical declarations to "${existing}". Consolidate under a shared class name.\n` +
+                `Declarations: ${fingerprint}`,
+            { node: ruleNode },
+          );
+        } else {
+          seen.set(fingerprint, ruleNode.selector);
+        }
+      });
+    };
+  };
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+
+  return {
+    ruleName: duplicateRulesetRuleName,
+    rule,
+  };
+}
+
 export function createStyleLint(options: StyleLintOptions = {}) {
   const {
     ignoreTypes = ["html", "body"],
@@ -149,7 +224,7 @@ export function createStyleLint(options: StyleLintOptions = {}) {
     files = ["src/**/*.css"],
   } = options;
 
-  const plugins: unknown[] = [createDescendantColorPlugin()];
+  const plugins: unknown[] = [createDescendantColorPlugin(), createDuplicateRulesetPlugin()];
   if (functionalTokens.length > 0) {
     plugins.push(createFunctionalTokenPlugin(functionalTokens));
   }
@@ -168,6 +243,9 @@ export function createStyleLint(options: StyleLintOptions = {}) {
 
     // Ban color on descendants inside data-attribute selectors.
     [descendantColorRuleName]: true,
+
+    // Flag selectors with identical declarations for consolidation.
+    [duplicateRulesetRuleName]: true,
 
     // Ban animating layout properties — causes reflow on every frame.
     // Use transform (scaleY, translateY) or opacity instead.
