@@ -237,3 +237,109 @@ describe("no-duplicate-ruleset", () => {
     expect(warnings).toHaveLength(0);
   });
 });
+
+// ── Near-duplicate tests ──
+
+function runNearDuplicatePlugin(rules: MockRule[]): string[] {
+  const config = createStyleLint();
+  const plugin = (config.plugins as Array<{ ruleName: string; rule: (enabled: boolean) => (...args: unknown[]) => void }>)
+    .find((p) => p.ruleName === "stablekit/no-near-duplicate-ruleset");
+  if (!plugin) throw new Error("Plugin not found");
+
+  const warnings: string[] = [];
+  const result = {
+    warn(message: string, _opts: unknown) {
+      warnings.push(message);
+    },
+  };
+
+  const ruleFn = plugin.rule(true);
+  ruleFn(mockRoot(rules), result);
+  return warnings;
+}
+
+describe("no-near-duplicate-ruleset", () => {
+  it("catches rules with same props differing by one value", () => {
+    const warnings = runNearDuplicatePlugin([
+      mockRule(".muted-label", [
+        ["color", "var(--text-muted)"],
+        ["font-size", "11px"],
+      ]),
+      mockRule(".subtle-text", [
+        ["color", "var(--text-muted)"],
+        ["font-size", "12px"],
+      ]),
+    ]);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain(".subtle-text");
+    expect(warnings[0]).toContain(".muted-label");
+    expect(warnings[0]).toContain("font-size");
+    expect(warnings[0]).toContain("11px");
+    expect(warnings[0]).toContain("12px");
+  });
+
+  it("skips exact duplicates (handled by other plugin)", () => {
+    const warnings = runNearDuplicatePlugin([
+      mockRule(".a", [["color", "red"], ["padding", "1rem"]]),
+      mockRule(".b", [["color", "red"], ["padding", "1rem"]]),
+    ]);
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("skips rules that differ by 2+ values", () => {
+    const warnings = runNearDuplicatePlugin([
+      mockRule(".a", [["color", "red"], ["font-size", "11px"]]),
+      mockRule(".b", [["color", "blue"], ["font-size", "14px"]]),
+    ]);
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("skips rules with different property sets", () => {
+    const warnings = runNearDuplicatePlugin([
+      mockRule(".a", [["color", "red"], ["font-size", "11px"]]),
+      mockRule(".b", [["color", "red"], ["padding", "1rem"]]),
+    ]);
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("skips single-declaration rules", () => {
+    const warnings = runNearDuplicatePlugin([
+      mockRule(".a", [["font-size", "11px"]]),
+      mockRule(".b", [["font-size", "12px"]]),
+    ]);
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("skips keyframes", () => {
+    const kf = { type: "atrule", name: "keyframes" };
+    const warnings = runNearDuplicatePlugin([
+      mockRule("from", [["opacity", "0"], ["transform", "scale(0.9)"]], kf),
+      mockRule("to", [["opacity", "1"], ["transform", "scale(0.9)"]], kf),
+    ]);
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("skips when only diff is @apply (too coarse to compare)", () => {
+    const warnings = runNearDuplicatePlugin([
+      mockRuleWithNodes(".a", [
+        { type: "decl", prop: "color", value: "red" },
+        { type: "atrule", name: "apply", params: "text-sm font-bold px-4" },
+      ]),
+      mockRuleWithNodes(".b", [
+        { type: "decl", prop: "color", value: "red" },
+        { type: "atrule", name: "apply", params: "flex items-center gap-2" },
+      ]),
+    ]);
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("reports only one warning per rule even with multiple near-matches", () => {
+    const warnings = runNearDuplicatePlugin([
+      mockRule(".a", [["color", "red"], ["gap", "10px"]]),
+      mockRule(".b", [["color", "red"], ["gap", "12px"]]),
+      mockRule(".c", [["color", "red"], ["gap", "14px"]]),
+    ]);
+    // .b warns against .a, .c warns against .a (or .b) — one each
+    expect(warnings).toHaveLength(2);
+  });
+});
