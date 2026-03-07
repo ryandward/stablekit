@@ -36,6 +36,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
+      "stablekit.ts": path.resolve(__dirname, "../src/index.ts"),
       stablekit: path.resolve(__dirname, "../src/index.ts"),
     },
   },

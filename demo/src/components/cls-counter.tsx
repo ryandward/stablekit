@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useStableKitMode } from "@/context/stablekit-mode";
-import { StableCounter } from "stablekit.ts";
+import { StableCounter } from "stablekit";
 
 export function CLSCounter() {
   const { enabled } = useStableKitMode();
