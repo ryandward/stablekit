@@ -32,8 +32,8 @@ export interface ArchitectureLintOptions {
 
   /** Ban all Tailwind color palette utilities in className.
    *  Catches bg-red-500, text-green-600, border-cyan-400, etc.
-   *  When true, colors must live in CSS — not in component classNames.
-   *  @default false */
+   *  Colors must live in CSS — not in component classNames.
+   *  @default true */
   banColorUtilities?: boolean;
 
   /** Glob patterns for files to lint.
@@ -45,7 +45,7 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
   const {
     stateTokens,
     variantProps = [],
-    banColorUtilities = false,
+    banColorUtilities = true,
     files = ["src/components/**/*.{tsx,jsx}"],
   } = options;
 

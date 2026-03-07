@@ -360,7 +360,7 @@ describe("!important in Tailwind className", () => {
   });
 
   it("allows normal classes without !", () => {
-    expectClean(`<span className="text-red-500 font-bold" />`);
+    expectClean(`<span className="text-body font-bold" />`);
   });
 });
 
@@ -682,7 +682,7 @@ describe("Tailwind color utilities in className (banColorUtilities)", () => {
   it("does not flag colors when banColorUtilities is off", () => {
     expectClean(
       `<div className="bg-red-500" />`,
-      { stateTokens: [] },
+      { stateTokens: [], banColorUtilities: false },
     );
   });
 });
