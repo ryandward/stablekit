@@ -57,6 +57,7 @@ rendering for the same UI region.
 | `MediaSkeleton`      | Temporal               | Aspect-ratio media placeholder               |
 | `CollectionSkeleton` | Temporal + Monotonic   | Loading-aware list                           |
 | `FadeTransition`     | Animation              | Enter/exit animation wrapper                 |
+| `createPrimitive`    | Enforcement            | Factory for firewalled UI primitives         |
 
 ## Anti-patterns you must not generate
 
@@ -231,6 +232,92 @@ React.cloneElement(child, {
 When you need to enforce rigid layout physics, always operate at the React
 layer (cloneElement, inline styles, context) — never at the CSS layer.
 
+### 11. Do not hand-write UI primitives — use createPrimitive
+
+WRONG — manual boilerplate, easy to forget the Omit firewall:
+```tsx
+interface BadgeProps extends Omit<HTMLAttributes<HTMLSpanElement>, "className" | "style"> {
+  variant: Status;
+}
+export function Badge({ variant, children, ...props }: BadgeProps) {
+  return <span className="sk-badge" data-variant={variant} {...props}>{children}</span>;
+}
+```
+
+CORRECT — factory handles the firewall automatically:
+```tsx
+import { createPrimitive } from "stablekit";
+export const Badge = createPrimitive("span", "sk-badge", {
+  variant: ["active", "trial", "churned"],
+});
+```
+
+`createPrimitive` blocks `className` and `style` at the type level, maps
+variant props to `data-*` attributes, and type-checks variant values. The
+consumer writes `variant="active"`, the DOM gets `data-variant="active"`,
+and CSS selects on it. The firewall is automatic — you cannot forget it.
+
+## The StableKit Separation of Concerns
+
+The codebase enforces four layers with a strict one-directional dependency
+flow. Each layer answers exactly one question.
+
+```
+Data → Contract → Structure → Presentation
+```
+
+| # | Layer | Question | Knows about | Never knows about |
+|---|-------|----------|-------------|-------------------|
+| 1 | Data | What is the value? | Nothing — raw payload | Structure, appearance, types |
+| 2 | Contract | What values are valid? | Allowed value sets | Structure, appearance, data source |
+| 3 | Structure | What is the DOM? | Contract (via props), class names, data-attributes | Appearance, data source |
+| 4 | Presentation | What does it look like? | Class names, data-attributes | Data source, React, TypeScript |
+
+Each layer depends only on the one to its left. Presentation never imports
+TypeScript. Structure never fetches data. Contract never references a CSS class.
+
+**Litmus test:** if a change to appearance requires editing a `.tsx` file, or a
+change to structure requires editing `.css`, a boundary has leaked.
+
+### Enforcement
+
+- **Data → Contract:** TypeScript compiler. If the API returns a value outside
+  the union type, it is a compile error.
+- **Contract → Structure:** TypeScript compiler. Component props reference the
+  contract type (`variant: Status`), so invalid values are compile errors.
+- **Structure → Presentation:** Three mechanisms:
+  1. Dumb UI primitives `Omit<>` the `className` and `style` props, preventing
+     consumers from injecting appearance at the Structure layer.
+  2. CSS uses `[data-variant="..."]` attribute selectors to map contract values
+     to visual styles.
+  3. **ESLint (`demo/eslint.config.js`) is mandatory.** It enforces the
+     Structure → Presentation boundary by banning two patterns:
+     - Data-dependent visual properties in JS (state tokens like
+       `text-success`, conditional style ternaries). These belong in CSS via
+       `data-*` attributes.
+     - Hardcoded visual values in JS (`rgba()`, hex codes). These belong in
+       CSS custom properties.
+     Run `npx eslint src/components/` before committing. Zero errors is the
+     requirement — do not add `eslint-disable` comments to bypass these rules.
+
+### Example: Badge
+
+```ts
+// Layer 2 — Contract (types.ts)
+export type Status = "active" | "trial" | "churned";
+```
+
+```tsx
+// Layer 3 — Structure (badge.tsx)
+// className and style are Omit'd — consumers cannot inject appearance
+<span className="sk-badge" data-variant={variant}>{children}</span>
+```
+
+```css
+/* Layer 4 — Presentation (index.css) */
+.sk-badge[data-variant="active"] { color: var(--color-success); }
+```
+
 ## Internal Contribution Rules
 
 Never write raw `process.env.NODE_ENV` checks in components. Always import
@@ -251,6 +338,58 @@ invariant(someCondition, "Explanation of what went wrong.");
 stripped entirely in production. `warning(condition, message)` emits a
 console.warn in development and is stripped entirely in production.
 
+### Banned Pattern: Logic Leakage
+
+Never store CSS classes, Tailwind strings, or styling logic in data files or
+non-UI modules. Data exports raw values only. Visual mapping belongs in CSS
+(via class or attribute selectors) or in dumb UI primitives that accept a
+semantic `variant` prop and map it to a class name.
+
+```ts
+// WRONG — data file contains Tailwind classes
+export const statusColors = {
+  active: "bg-green-100 text-green-800 border-green-300",
+};
+
+// WRONG — component maps data to inline Tailwind
+<span className={statusColors[status]}>{status}</span>
+
+// CORRECT — dumb component, semantic variant
+<Badge variant={status}>{status}</Badge>
+
+// CORRECT — CSS owns the visual mapping
+.sk-badge[data-variant="active"] { color: var(--color-success); ... }
+```
+
+If changing a color requires editing a `.ts` file, the architecture is broken.
+
+### Banned Pattern: Class Concatenation for Mutually Exclusive States
+
+Never use CSS class concatenation for mutually exclusive component states or
+variants (e.g., `primary`/`secondary`, `active`/`trial`/`churned`). A DOM node
+can accidentally receive two conflicting classes
+(`class="sk-badge-active sk-badge-churned"`), but it can only ever have one
+value for a given data-attribute (`data-variant="active"`).
+
+Classes define **what** a component is. Data-attributes define **how** it is
+currently behaving.
+
+```tsx
+// WRONG — class concatenation for variants
+<span className={`sk-badge sk-badge-${variant}`}>{children}</span>
+
+// CORRECT — base class + data-attribute
+<span className="sk-badge" data-variant={variant}>{children}</span>
+```
+
+```css
+/* WRONG — modifier class */
+.sk-badge-active { color: var(--color-success); }
+
+/* CORRECT — attribute selector on the base class */
+.sk-badge[data-variant="active"] { color: var(--color-success); }
+```
+
 ## Component selection guide
 
 | Problem                                    | Component            |
@@ -268,6 +407,7 @@ console.warn in development and is stripped entirely in production.
 | Number/price changes digit count           | `StableCounter`      |
 | Cart badge, notification count             | `StableCounter`      |
 | Form validation error appears/disappears   | `StableField`        |
+| Need a UI primitive (badge, button, card)  | `createPrimitive`    |
 
 ## Quick start pattern
 
@@ -282,6 +422,7 @@ import {
   StableCounter,
   StableField,
   FadeTransition,
+  createPrimitive,
 } from "stablekit";
 ```
 

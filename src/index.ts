@@ -45,3 +45,7 @@ export type { CollectionSkeletonProps } from "./components/collection-skeleton";
 
 export { FadeTransition } from "./components/fade-transition";
 export type { FadeTransitionProps } from "./components/fade-transition";
+
+// ── Primitive Factory ────────────────────────────────────────────────────────
+
+export { createPrimitive } from "./create-primitive";

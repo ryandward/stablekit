@@ -1,37 +1,30 @@
 # StableKit
 
-**A strict React rendering paradigm that decouples UI geometry from UI state.**
+React components that make layout shift structurally impossible.
 
 ## The Problem
 
-In standard React, a component is responsible for two things simultaneously: **paint** (what it looks like) and **geometry** (how much space it takes up). When state changes, the component re-renders, the paint changes, and the browser recalculates the geometry. The result is layout shift. The system is inherently unstable because geometry is bound to instantaneous state.
+React couples two things that should be independent: **what a component looks like** (paint) and **how much space it takes up** (geometry). When state changes, both change at once, and the browser reflows the page.
 
 ```tsx
-// Standard React: geometry is coupled to state.
 // When isLoading flips, the spinner is destroyed and replaced by a table.
 // The browser reflows the entire page.
 {isLoading ? <Spinner /> : <DataTable rows={rows} />}
 ```
 
-This is not a bug. It is the default rendering model. Every ternary, every conditional render, every `{data && <Component />}` is a geometry mutation disguised as a paint change.
+Every ternary, every conditional render, every `{data && <Component />}` is a geometry mutation disguised as a paint change. This is not a bug — it's the default rendering model.
 
-## The Paradigm
+## The Fix
 
-StableKit enforces a single architectural constraint:
+One rule:
 
 > **A container's dimensions must be a function of its maximum possible future state, not its current instantaneous state.**
 
-This means geometry is pre-allocated before data arrives, before the user clicks, before the state changes. The DOM always knows how big it will need to be. Paint changes freely. Geometry never moves.
-
-This constraint decomposes into three enforcement mechanisms.
-
-### 1. Temporal Pre-allocation
-
-If a component depends on asynchronous data, its bounding box must be declared synchronously before the data arrives.
-
-`MediaSkeleton` forces an `aspectRatio` prop. You cannot render an image without first carving out the exact hole in the DOM it will eventually occupy. The geometry exists before the paint does. `CollectionSkeleton` forces a `stubCount`. You cannot render a list without declaring how many rows will exist. `StableText` reserves space at the exact line-height of the text it will eventually display.
+Geometry is pre-allocated before data arrives, before the user clicks, before the state changes. Paint changes freely. Geometry never moves.
 
 ```tsx
+// One tree describes both loading and loaded states.
+// The geometry is identical in both. Only the paint changes.
 <LoadingBoundary loading={isLoading} exitDuration={150}>
   <MediaSkeleton aspectRatio={1} className="w-16 rounded-full">
     <img src={user.avatar} alt={user.name} />
@@ -41,93 +34,107 @@ If a component depends on asynchronous data, its bounding box must be declared s
 </LoadingBoundary>
 ```
 
-One JSX tree describes both the loading state and the loaded state. The geometry is identical in both. Only the paint changes.
-
-### 2. Spatial Pre-allocation
-
-If a UI region can exist in multiple mutually exclusive states, the DOM must render all possible states simultaneously and reserve the maximum combined footprint.
-
-`LayoutMap` refuses to let you conditionally render trees with a ternary. You supply the entire dictionary of possible futures upfront. It renders them all into a single CSS grid cell, measures the largest bounding box, locks the geometry, and toggles visibility with `[inert]` + a CSS-driven `data-state` attribute. The container never changes dimensions.
-
-```tsx
-<LayoutMap
-  value={activeTab}
-  map={{
-    profile: <Profile />,
-    invoices: <Invoices />,
-    settings: <Settings />,
-  }}
-/>
-```
-
-TypeScript infers the key union from `map` and checks `value` against it. Typos are compile-time errors, not silent rendering failures.
-
-`StateSwap` applies the same principle to boolean content. Both options render in the DOM simultaneously. The container reserves the width of the wider option.
-
-```tsx
-<button onClick={toggle}>
-  <StateSwap state={expanded} true="Close" false="View Details" />
-</button>
-```
-
-### 3. Monotonic Geometry
-
-Once a container has expanded to accommodate content, it is forbidden from shrinking, even if the content disappears.
-
-`SizeRatchet` wraps a ResizeObserver that tracks the maximum border-box size ever observed and applies `min-width`/`min-height` that only grows. The geometry is a one-way valve. When the architectural context changes (e.g., navigating to a different page), `resetKey` explicitly resets the floor.
-
-```tsx
-<SizeRatchet resetKey={currentRoute}>
-  {isLoading ? <Spinner /> : <DataTable rows={rows} />}
-</SizeRatchet>
-```
-
-`LoadingBoundary` composes all three mechanisms: it provides `LoadingContext` for temporal pre-allocation, wraps children in `SizeRatchet` for monotonic geometry, and manages the shimmer-to-content exit transition.
-
-## Enforcement
-
-StableKit enforces its paradigm at three layers.
-
-**Layer 1 — Types.** `LayoutMap` uses `NoInfer<K>` to make key typos a compile-time error. `MediaSkeleton` requires `aspectRatio: number`. `CollectionSkeleton` requires `stubCount: number`. `LoadingBoundary` requires `loading: boolean` — it is not optional. The type system makes incorrect usage a red squiggly, not a runtime surprise.
-
-**Layer 2 — React.** `MediaSkeleton` uses `Children.only()` + `cloneElement` to inject positional constraints as inline styles. The child physically cannot break out of the frame. No CSS `!important`, no developer discipline required.
-
-**Layer 3 — Runtime.** In development builds, `invariant()` throws a fatal error when `<LayoutView name="...">` is rendered outside a `<LayoutGroup>`. `warning()` fires when `<LayoutGroup>` is rendered without a `value` prop. Both are stripped entirely from production bundles via standard `process.env.NODE_ENV` dead-code elimination.
-
 ## Install
 
 ```bash
 npm install stablekit
 ```
 
+## Three Kinds of Stability
+
+### Temporal Pre-allocation
+
+If a component depends on async data, its bounding box is declared synchronously before the data arrives. `MediaSkeleton` forces an `aspectRatio`. `CollectionSkeleton` forces a `stubCount`. `StableText` reserves space at the exact line-height of the text it will display.
+
+### Spatial Pre-allocation
+
+If a UI region has multiple states, all states render simultaneously in a CSS grid overlap. The container sizes to the largest. `LayoutMap` renders a dictionary of views, toggles visibility with `[inert]` + `data-state`, and never changes dimensions. `StateSwap` does the same for boolean content inside buttons and labels.
+
+```tsx
+<LayoutMap value={activeTab} map={{
+  profile: <Profile />,
+  invoices: <Invoices />,
+  settings: <Settings />,
+}} />
+
+<button onClick={toggle}>
+  <StateSwap state={expanded} true="Close" false="View Details" />
+</button>
+```
+
+### Monotonic Geometry
+
+Once a container expands, it cannot shrink unless explicitly reset. `SizeRatchet` tracks the maximum size ever observed and applies `min-width`/`min-height` that only grows. `resetKey` resets the floor when the context changes.
+
 ## Components
 
-| Component | Paradigm | Mechanism |
-|---|---|---|
-| `StateSwap` | Spatial pre-allocation | CSS grid overlap, both options rendered |
-| `LayoutGroup` | Spatial pre-allocation | CSS grid overlap, `[inert]` toggle |
-| `LayoutView` | Spatial pre-allocation | Single view inside a LayoutGroup |
-| `LayoutMap` | Spatial pre-allocation | Type-safe dictionary mapping |
-| `StableCounter` | Spatial pre-allocation | Grid overlap ghost for numeric/text width |
-| `StableField` | Spatial pre-allocation | Grid overlap ghost for form error height |
-| `SizeRatchet` | Monotonic geometry | ResizeObserver ratchet, `min-width`/`min-height` |
-| `LoadingBoundary` | All three | Composes LoadingContext + SizeRatchet + exit transition |
-| `LoadingContext` | Temporal pre-allocation | Ambient loading provider via React context |
-| `StableText` | Temporal pre-allocation | Typography + skeleton in one tag |
-| `TextSkeleton` | Temporal pre-allocation | Inline shimmer at exact line-height |
-| `MediaSkeleton` | Temporal pre-allocation | Aspect-ratio placeholder + child constraints |
-| `CollectionSkeleton` | Temporal + Monotonic | Forced stub count + SizeRatchet |
-| `FadeTransition` | Animation | Enter/exit via state machine, geometry untouched |
+| Component | What it does |
+|---|---|
+| `LoadingBoundary` | Loading orchestrator — composes shimmer + ratchet + exit transition |
+| `StableText` | Typography + skeleton in one tag |
+| `MediaSkeleton` | Aspect-ratio placeholder that constrains its child |
+| `CollectionSkeleton` | Loading-aware list with forced stub count |
+| `LayoutMap` | Type-safe dictionary of views with stable dimensions |
+| `LayoutGroup` + `LayoutView` | Multi-state spatial container (use LayoutMap when possible) |
+| `StateSwap` | Boolean content swap — both options rendered, zero shift |
+| `StableCounter` | Numeric/text width pre-allocation via ghost reserve |
+| `StableField` | Form error height pre-allocation via ghost reserve |
+| `SizeRatchet` | Container that never shrinks (ResizeObserver ratchet) |
+| `FadeTransition` | Enter/exit animation wrapper, geometry untouched |
+| `createPrimitive` | Factory for UI primitives with architectural enforcement |
+
+## Keeping Visual Decisions in CSS
+
+There's a problem adjacent to layout stability: **visual decisions leaking into JavaScript.**
+
+A component's appearance can change for two reasons. **Identity** — a brand button is always indigo because that's the brand. **Data** — a badge is green when active and red when churned. Identity is fixed and belongs in a className. Data-dependent appearance changes at runtime based on values the component receives.
+
+When a component picks its own visuals based on data — `className={status === "paid" ? "text-green-500" : "text-red-500"}` — the visual decision lives in JavaScript. Changing a color means editing a `.tsx` file. A designer can't update the palette without a developer. A developer can't refactor the component without understanding the color system.
+
+The fix is a hard boundary: **components declare what state they're in, and CSS decides what that looks like.** A `<Badge>` says `data-variant="active"`. CSS says `.sk-badge[data-variant="active"] { color: green }`. The component never knows its own color, font weight, border, opacity, or any other visual property that depends on data. It only knows its state.
+
+### `createPrimitive`
+
+`createPrimitive` makes this boundary automatic. It builds UI primitives where `className` and `style` are blocked at the type level, and variant props are mapped to `data-*` attributes:
+
+```tsx
+import { createPrimitive } from "stablekit";
+
+const Badge = createPrimitive("span", "sk-badge", {
+  variant: ["active", "trial", "churned"],
+});
+```
+
+Consumers get type-checked variants and a locked-down surface:
+
+```tsx
+<Badge variant="active">Paid</Badge>         // renders data-variant="active"
+<Badge variant="bogus">Paid</Badge>          // TypeScript error
+<Badge className="text-red-500">Paid</Badge> // TypeScript error
+```
+
+CSS owns the visuals:
+
+```css
+.sk-badge[data-variant="active"] { color: var(--color-success); }
+.sk-badge[data-variant="trial"]  { color: var(--color-warning); }
+```
+
+Changing a color means editing CSS. Never a component file.
+
+### Architecture Linter
+
+The demo includes a reference ESLint config (`demo/eslint.config.js`) that catches visual decisions leaking into JS — hardcoded colors, conditional style ternaries, state tokens in className strings. Copy and adapt it for your project (the token vocabulary is project-specific).
 
 ## How It Works
 
-**Spatial stability** uses CSS grid overlap (`grid-area: 1/1`). All views render in the DOM simultaneously. The container auto-sizes to the largest child. Inactive views are hidden with `[inert]` + `data-state="inactive"` (CSS-driven `opacity: 0; visibility: hidden`). Because hiding is CSS-driven rather than inline-style-driven, consumers can add CSS transitions to `.sk-layout-view` for custom enter/exit animations. Zero JS measurement.
+**Spatial stability** uses CSS grid overlap (`grid-area: 1/1`). All views render in the DOM simultaneously. The container auto-sizes to the largest child. Inactive views are hidden with `[inert]` + `data-state="inactive"` (CSS-driven opacity/visibility). Consumers can add CSS transitions to `.sk-layout-view[data-state]` for custom animations.
 
 **Loading skeletons** use `1lh` CSS units to match line-height exactly. Shimmer width comes from inert ghost content — the skeleton is exactly as wide as the text it replaces.
 
-**`MediaSkeleton`** enforces child constraints via `React.cloneElement` inline styles (`position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover`). No CSS `!important`.
+**`MediaSkeleton`** constrains its child via `cloneElement` inline styles (`position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover`). No CSS `!important`.
 
-**`SizeRatchet`** uses a one-way ResizeObserver ratchet. It tracks the maximum border-box size ever observed and applies `min-width`/`min-height` that only grows. `resetKey` resets the floor when the architectural context changes.
+**`SizeRatchet`** uses a one-way ResizeObserver. It tracks the maximum border-box size ever observed and applies `min-width`/`min-height` that only grows.
 
 ## CSS Custom Properties
 
@@ -135,12 +142,17 @@ npm install stablekit
 --sk-shimmer-color: #e5e7eb;
 --sk-shimmer-highlight: #f3f4f6;
 --sk-shimmer-radius: 0.125rem;
+--sk-shimmer-duration: 1.5s;
 --sk-skeleton-gap: 0.75rem;
 --sk-skeleton-bone-gap: 0.125rem;
 --sk-skeleton-bone-padding: 0.375rem 0.5rem;
 --sk-fade-duration: 200ms;
---sk-fade-height: 1000px;
---sk-exit-duration: 150ms;
+--sk-fade-offset-y: -12px;
+--sk-fade-offset-scale: 0.98;
+--sk-loading-exit-duration: 150ms;
+--sk-ease-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1.0);
+--sk-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+--sk-ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
 ```
 
 ## Style Injection
