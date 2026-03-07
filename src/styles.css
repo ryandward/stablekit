@@ -9,9 +9,8 @@
 
 /* All children overlap in the same grid cell.
    Grid auto-sizes to the largest child.
-   Block-level groups use flex-column so content stretches to fill
-   the reserved width. Inline groups (data-inline) skip this — their
-   children are inline content that shouldn't be forced vertical. */
+   Grid items stretch to fill the cell by default — no flex needed.
+   Inline groups (StateSwap) use inline-grid for inline contexts. */
 .sk-layout-group {
   display: grid;
 }
@@ -21,12 +20,6 @@
 .sk-layout-group > * {
   grid-area: 1 / 1;
 }
-.sk-layout-group:not([data-inline]) > * {
-  display: flex;
-  flex-direction: column;
-}
-/* Inline groups: children inherit the parent's inline flow.
-   Without this, grid items default to block and stack content. */
 .sk-layout-group[data-inline] > * {
   display: inline;
 }
