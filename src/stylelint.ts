@@ -43,6 +43,12 @@ export interface StyleLintOptions {
    *  Any var() referencing these inside @utility is a lint error. */
   functionalTokens?: string[];
 
+  /** Custom property prefixes set at runtime (JS, Radix, inline styles)
+   *  that should not be flagged as undefined.
+   *  e.g. ["--radix-", "--bar-"]
+   *  @default [] */
+  runtimeTokens?: string[];
+
   /** Glob patterns for files to lint.
    *  @default ["src/**\/*.css"] */
   files?: string[];
@@ -52,6 +58,7 @@ const pluginRuleName = "stablekit/no-functional-in-utility";
 const descendantColorRuleName = "stablekit/no-descendant-color-in-state";
 const duplicateRulesetRuleName = "stablekit/no-duplicate-ruleset";
 const nearDuplicateRuleName = "stablekit/no-near-duplicate-ruleset";
+const undefinedTokenRuleName = "stablekit/no-undefined-token";
 
 /**
  * Stylelint plugin that bans functional color tokens inside @utility blocks.
@@ -310,14 +317,79 @@ function createNearDuplicatePlugin() {
   };
 }
 
+/**
+ * Stylelint plugin that flags var() references to custom properties
+ * that are never defined in the same file.
+ *
+ * Pass 1: collect all --custom-property definitions (declarations and @theme).
+ * Pass 2: flag any var(--name) where --name wasn't collected.
+ */
+function createUndefinedTokenPlugin(runtimePrefixes: string[]) {
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const varPattern = /var\(--([a-zA-Z0-9_-]+)/g;
+
+  const rule = (enabled: boolean) => {
+    return (
+      root: any,
+      result: { warn: (message: string, options: { node: unknown }) => void },
+    ) => {
+      if (!enabled) return;
+
+      // Pass 1: collect all defined custom properties
+      const defined = new Set<string>();
+
+      root.walkDecls((decl: any) => {
+        if (decl.prop.startsWith("--")) {
+          defined.add(decl.prop);
+        }
+      });
+
+      // Also collect from @theme blocks (Tailwind v4)
+      root.walkAtRules("theme", (atRule: any) => {
+        atRule.walkDecls((decl: any) => {
+          if (decl.prop.startsWith("--")) {
+            defined.add(decl.prop);
+          }
+        });
+      });
+
+      // Pass 2: flag any var(--name) that references an undefined property
+      root.walkDecls((decl: any) => {
+        // Skip custom property definitions themselves
+        if (decl.prop.startsWith("--")) return;
+
+        let match;
+        varPattern.lastIndex = 0;
+        while ((match = varPattern.exec(decl.value)) !== null) {
+          const name = `--${match[1]}`;
+          if (defined.has(name)) continue;
+          // Skip runtime-set tokens (Radix, JS, inline styles)
+          if (runtimePrefixes.some((p) => name.startsWith(p))) continue;
+          result.warn(
+            `Reference to undefined custom property "${name}". This token is not defined anywhere in this file.`,
+            { node: decl },
+          );
+        }
+      });
+    };
+  };
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+
+  return {
+    ruleName: undefinedTokenRuleName,
+    rule,
+  };
+}
+
 export function createStyleLint(options: StyleLintOptions = {}) {
   const {
     ignoreTypes = ["html", "body"],
     functionalTokens = [],
+    runtimeTokens = [],
     files = ["src/**/*.css"],
   } = options;
 
-  const plugins: unknown[] = [createDescendantColorPlugin(), createDuplicateRulesetPlugin(), createNearDuplicatePlugin()];
+  const plugins: unknown[] = [createDescendantColorPlugin(), createDuplicateRulesetPlugin(), createNearDuplicatePlugin(), createUndefinedTokenPlugin(runtimeTokens)];
   if (functionalTokens.length > 0) {
     plugins.push(createFunctionalTokenPlugin(functionalTokens));
   }
@@ -342,6 +414,9 @@ export function createStyleLint(options: StyleLintOptions = {}) {
 
     // Flag near-duplicate rulesets (same props, differ by 1 value).
     [nearDuplicateRuleName]: true,
+
+    // Flag var() references to custom properties not defined in this file.
+    [undefinedTokenRuleName]: true,
 
     // Ban animating layout properties — causes reflow on every frame.
     // Use transform (scaleY, translateY) or opacity instead.

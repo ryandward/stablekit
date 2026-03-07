@@ -82,13 +82,36 @@ function mockRuleWithNodes(
   };
 }
 
-function mockRoot(rules: MockRule[]) {
+interface MockAtRuleBlock {
+  type: "atrule";
+  name: string;
+  nodes: MockDecl[];
+  walkDecls: (cb: (decl: MockDecl) => void) => void;
+}
+
+function mockRoot(rules: MockRule[], extraDecls?: MockDecl[], atRuleBlocks?: MockAtRuleBlock[]) {
   return {
     walkRules(cb: (rule: MockRule) => void) {
       for (const r of rules) cb(r);
     },
-    walkAtRules(_name: string, cb: (atRule: { walkDecls: (cb: (decl: MockDecl) => void) => void }) => void) {
-      // unused by duplicate ruleset plugin
+    walkDecls(cb: (decl: MockDecl) => void) {
+      // Walk definitions from atRuleBlocks (e.g. @theme)
+      for (const block of atRuleBlocks ?? []) {
+        for (const d of block.nodes) cb(d);
+      }
+      // Walk extra root-level decls
+      for (const d of extraDecls ?? []) cb(d);
+      // Walk decls inside rules
+      for (const r of rules) {
+        for (const n of r.nodes) {
+          if (n.type === "decl") cb(n as MockDecl);
+        }
+      }
+    },
+    walkAtRules(name: string, cb: (atRule: MockAtRuleBlock) => void) {
+      for (const block of atRuleBlocks ?? []) {
+        if (block.name === name) cb(block);
+      }
     },
   };
 }
@@ -341,5 +364,115 @@ describe("no-near-duplicate-ruleset", () => {
     ]);
     // .b warns against .a, .c warns against .a (or .b) — one each
     expect(warnings).toHaveLength(2);
+  });
+});
+
+// ── Undefined token tests ──
+
+function runUndefinedTokenPlugin(
+  rules: MockRule[],
+  extraDecls?: MockDecl[],
+  atRuleBlocks?: MockAtRuleBlock[],
+): string[] {
+  const config = createStyleLint();
+  const plugin = (config.plugins as Array<{ ruleName: string; rule: (enabled: boolean) => (...args: unknown[]) => void }>)
+    .find((p) => p.ruleName === "stablekit/no-undefined-token");
+  if (!plugin) throw new Error("Plugin not found");
+
+  const warnings: string[] = [];
+  const result = {
+    warn(message: string, _opts: unknown) {
+      warnings.push(message);
+    },
+  };
+
+  const ruleFn = plugin.rule(true);
+  ruleFn(mockRoot(rules, extraDecls, atRuleBlocks), result);
+  return warnings;
+}
+
+function decl(prop: string, value: string): MockDecl {
+  return { type: "decl", prop, value, source: {} };
+}
+
+describe("no-undefined-token", () => {
+  it("catches var() reference to undefined custom property", () => {
+    const warnings = runUndefinedTokenPlugin([
+      mockRule(".error", [["color", "var(--color-status-error)"]]),
+    ]);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain("--color-status-error");
+    expect(warnings[0]).toContain("not defined");
+  });
+
+  it("allows var() reference to a defined custom property", () => {
+    const warnings = runUndefinedTokenPlugin(
+      [mockRule(".badge", [["color", "var(--color-status-active)"]])],
+      [decl("--color-status-active", "#00ff00")],
+    );
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("allows var() reference defined in @theme block", () => {
+    const themeBlock: MockAtRuleBlock = {
+      type: "atrule",
+      name: "theme",
+      nodes: [decl("--color-brand", "#123456")],
+      walkDecls(cb) { for (const d of this.nodes) cb(d); },
+    };
+    const warnings = runUndefinedTokenPlugin(
+      [mockRule(".logo", [["color", "var(--color-brand)"]])],
+      [],
+      [themeBlock],
+    );
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("catches multiple undefined references in one declaration", () => {
+    const warnings = runUndefinedTokenPlugin([
+      mockRule(".x", [["background", "linear-gradient(var(--a), var(--b))"]]),
+    ]);
+    expect(warnings).toHaveLength(2);
+    expect(warnings[0]).toContain("--a");
+    expect(warnings[1]).toContain("--b");
+  });
+
+  it("allows defined property used as value of another custom property", () => {
+    const warnings = runUndefinedTokenPlugin(
+      [mockRule(".x", [["color", "var(--text-primary)"]])],
+      [decl("--text-primary", "var(--ink)")],
+    );
+    // --text-primary is defined, so no warning on the .x rule
+    // --ink is referenced inside a custom property definition — skipped
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("does not flag var() inside custom property definitions", () => {
+    // --foo: var(--bar) should not flag --bar (custom prop defs can chain)
+    const warnings = runUndefinedTokenPlugin(
+      [],
+      [decl("--foo", "var(--bar)")],
+    );
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("skips runtime tokens matching configured prefixes", () => {
+    const config = createStyleLint({ runtimeTokens: ["--radix-", "--bar-"] });
+    const plugin = (config.plugins as Array<{ ruleName: string; rule: (enabled: boolean) => (...args: unknown[]) => void }>)
+      .find((p) => p.ruleName === "stablekit/no-undefined-token")!;
+
+    const warnings: string[] = [];
+    const ruleFn = plugin.rule(true);
+    ruleFn(
+      mockRoot([
+        mockRule(".accordion", [["height", "var(--radix-accordion-content-height)"]]),
+        mockRule(".chart", [["fill", "var(--bar-color)"]]),
+        mockRule(".broken", [["color", "var(--nonexistent)"]]),
+      ]),
+      { warn(msg: string) { warnings.push(msg); } },
+    );
+    // Only --nonexistent should be flagged
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain("--nonexistent");
   });
 });
