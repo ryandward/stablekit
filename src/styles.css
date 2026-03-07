@@ -9,7 +9,8 @@
 
 /* All children overlap in the same grid cell.
    Grid auto-sizes to the largest child.
-   Grid items stretch to fill the cell by default — no flex needed.
+   Views use flex-column so their content stretches to fill
+   the reserved width — the visual footprint is constant.
    Inline groups (StateSwap) use inline-grid for inline contexts. */
 .sk-layout-group {
   display: grid;
@@ -19,6 +20,8 @@
 }
 .sk-layout-group > * {
   grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
 }
 .sk-layout-group[data-inline] > * {
   display: inline;
