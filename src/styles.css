@@ -25,6 +25,11 @@
   display: flex;
   flex-direction: column;
 }
+/* Inline groups: children inherit the parent's inline flow.
+   Without this, grid items default to block and stack content. */
+.sk-layout-group[data-inline] > * {
+  display: inline;
+}
 
 /* Inactive LayoutView hiding — CSS-driven via data-state attribute.
    LayoutView sets data-state="active"|"inactive" so consumers can
