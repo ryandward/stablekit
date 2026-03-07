@@ -8,6 +8,6 @@ export default tseslint.config(
   createArchitectureLint({
     stateTokens: ["success", "warning", "destructive", "paradigm"],
     variantProps: ["variant"],
-    classNamePassthrough: ["StableText", "StableCounter", "MediaSkeleton", "CollectionSkeleton", "StateSwap", "LayoutGroup", "SizeRatchet", "FadeTransition", "ChevronDown", "X"],
+    classNameBlocked: ["Badge", "Button"],
   }),
 );

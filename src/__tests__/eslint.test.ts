@@ -811,66 +811,74 @@ describe("interpolated text in JSX children", () => {
   });
 });
 
-// ── Category 5: className on custom components ──────────────
+// ── Category 5: className on firewalled components ──────────────
 
-describe("className on custom components", () => {
-  it("catches <Input className='pl-9' />", () => {
+describe("className on firewalled components", () => {
+  const blocked = { stateTokens: [], classNameBlocked: ["Badge", "Button", "Card", "Input"] };
+
+  it("catches className on a blocked component", () => {
     expectError(
       `<Input className="pl-9" />`,
-      "className on a custom component",
+      "className on a firewalled component",
+      blocked,
     );
   });
 
-  it("catches <Button className='mt-4 w-full' />", () => {
+  it("catches className on another blocked component", () => {
     expectError(
       `<Button className="mt-4 w-full" />`,
-      "className on a custom component",
+      "className on a firewalled component",
+      blocked,
     );
   });
 
-  it("catches className expression on component", () => {
+  it("catches className expression on blocked component", () => {
     expectError(
       `<Card className={styles.card} />`,
-      "className on a custom component",
+      "className on a firewalled component",
+      blocked,
+    );
+  });
+
+  it("allows className on non-blocked components", () => {
+    expectClean(
+      `<NavLink className="tab-link" />`,
+      blocked,
+    );
+  });
+
+  it("allows className on Lucide icons (not blocked)", () => {
+    expectClean(
+      `<ChevronDown className="icon-sm" />`,
+      blocked,
     );
   });
 
   it("allows className on native elements", () => {
     expectClean(
       `<div className="flex gap-3 p-4" />`,
+      blocked,
     );
   });
 
-  it("allows className on native span", () => {
-    expectClean(
-      `<span className="text-body font-bold" />`,
-    );
-  });
-
-  it("allows data-attributes on custom components", () => {
+  it("allows data-attributes on blocked components", () => {
     expectClean(
       `<Badge data-variant="active" />`,
+      blocked,
     );
   });
 
-  it("allows variant props on custom components", () => {
+  it("allows variant props on blocked components", () => {
     expectClean(
       `<Badge variant="active">Paid</Badge>`,
+      blocked,
     );
   });
 
-  it("allows className on passthrough components", () => {
+  it("rule is off when classNameBlocked is empty", () => {
     expectClean(
-      `<StableText className="sk-heading" />`,
-      { stateTokens: [], classNamePassthrough: ["StableText"] },
-    );
-  });
-
-  it("still catches className on non-passthrough components when passthrough is set", () => {
-    expectError(
       `<Input className="pl-9" />`,
-      "className on a custom component",
-      { stateTokens: [], classNamePassthrough: ["StableText"] },
+      { stateTokens: [] },
     );
   });
 });

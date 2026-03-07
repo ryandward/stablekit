@@ -53,11 +53,11 @@ export interface ArchitectureLintOptions {
    *  @default true */
   banColorUtilities?: boolean;
 
-  /** Components that transparently pass className to their root element.
-   *  These are excluded from the className-on-component ban.
-   *  e.g. ["StableText", "StableCounter", "MediaSkeleton", "ChevronDown"]
-   *  @default [] */
-  classNamePassthrough?: string[];
+  /** Components where className is banned (your firewalled primitives).
+   *  Only these components are flagged — everything else is left alone.
+   *  e.g. ["Badge", "Button", "Card", "Input", "IconButton"]
+   *  @default [] (rule is off when empty) */
+  classNameBlocked?: string[];
 
 
   /** Components where `loading` prop does NOT trigger a content swap
@@ -183,7 +183,7 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
     stateTokens,
     variantProps = [],
     banColorUtilities = true,
-    classNamePassthrough = [],
+    classNameBlocked = [],
     loadingPassthrough = ["LoadingBoundary"],
     files = ["src/components/**/*.{tsx,jsx}"],
   } = options;
@@ -367,24 +367,17 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
             "Interpolated text in JSX children. Extract to a const above the return (the linter won't flag a plain variable). For state-driven values, use <StableCounter> for numbers or <StateSwap> for text variants.",
         },
 
-        // --- 5. className on custom components ---
+        // --- 5. className on firewalled components ---
 
-        ...(classNamePassthrough.length
+        ...(classNameBlocked.length
           ? [
               {
-                selector: `JSXOpeningElement[name.name=/^[A-Z]/]:not([name.name=/^(${classNamePassthrough.join("|")})$/]) > JSXAttribute[name.name='className']`,
+                selector: `JSXOpeningElement[name.name=/^(${classNameBlocked.join("|")})$/] > JSXAttribute[name.name='className']`,
                 message:
-                  "className on a custom component. Components own their own styling — use a data-attribute, variant prop, or CSS class internally instead of passing Tailwind utilities from the consumer.",
+                  "className on a firewalled component. This component owns its own styling — use a data-attribute, variant prop, or CSS class internally instead of passing Tailwind utilities from the consumer.",
               },
             ]
-          : [
-              {
-                selector:
-                  "JSXOpeningElement[name.name=/^[A-Z]/] > JSXAttribute[name.name='className']",
-                message:
-                  "className on a custom component. Components own their own styling — use a data-attribute, variant prop, or CSS class internally instead of passing Tailwind utilities from the consumer.",
-              },
-            ]),
+          : []),
 
       ],
       "stablekit/no-loading-conflict": ["error", { passthrough: loadingPassthrough }],

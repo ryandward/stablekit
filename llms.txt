@@ -317,10 +317,10 @@ change to structure requires editing `.css`, a boundary has leaked.
      or use a StableKit component (for state-driven swaps — StateSwap,
      LayoutMap, LoadingBoundary, FadeTransition, StableField, StableCounter,
      LayoutGroup). These rules are always on.
-     `className` on PascalCase components is banned — components own their own
-     styling. Use `classNamePassthrough` to exempt transparent wrappers (e.g.
-     `StableText`, `MediaSkeleton`, Lucide icons) that forward className to
-     their root element.
+     `classNameBlocked` declares your firewalled primitives (e.g.
+     `["Badge", "Button", "Card", "Input"]`). Only those components are flagged
+     for className — everything else (Lucide icons, Radix, React Router, etc.)
+     is left alone. The rule is off when `classNameBlocked` is empty.
      A custom rule (`stablekit/no-loading-conflict`) catches dual-paradigm
      conflicts: if a component has a `loading` prop (which triggers an internal
      content swap via StateSwap), children must not be variables derived from
