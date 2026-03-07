@@ -28,6 +28,9 @@
   flex-direction: row;
   align-items: center;
 }
+.sk-layout-group[data-inline] > * > * {
+  width: 100%;
+}
 
 /* Inactive LayoutView hiding — CSS-driven via data-state attribute.
    LayoutView sets data-state="active"|"inactive" so consumers can
