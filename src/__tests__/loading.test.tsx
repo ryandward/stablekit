@@ -170,13 +170,13 @@ describe("LoadingBoundary", () => {
     expect(container.querySelector(".sk-size-ratchet")).toBeTruthy();
   });
 
-  it("sets --sk-exit-duration CSS variable", () => {
+  it("sets --sk-loading-exit-duration CSS variable", () => {
     const { container } = render(
       <LoadingBoundary loading={false} exitDuration={200}>
         <p>Content</p>
       </LoadingBoundary>
     );
     const ratchet = container.querySelector(".sk-size-ratchet") as HTMLElement;
-    expect(ratchet.style.getPropertyValue("--sk-exit-duration")).toBe("200ms");
+    expect(ratchet.style.getPropertyValue("--sk-loading-exit-duration")).toBe("200ms");
   });
 });

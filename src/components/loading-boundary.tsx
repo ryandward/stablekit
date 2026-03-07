@@ -13,7 +13,7 @@ export interface LoadingBoundaryProps extends HTMLAttributes<HTMLElement> {
   /** Whether data is loading. Sets LoadingContext for all nested components. */
   loading: boolean;
   /**
-   * Crossfade duration in ms. Sets `--sk-exit-duration` on the container
+   * Crossfade duration in ms. Sets `--sk-loading-exit-duration` on the container
    * so all nested skeleton transitions use the same timing.
    */
   exitDuration: number;
@@ -31,7 +31,7 @@ export interface LoadingBoundaryProps extends HTMLAttributes<HTMLElement> {
  *
  * Skeleton components handle their own crossfade via CSS opacity
  * transitions on permanently-mounted layers. The `exitDuration` prop
- * sets `--sk-exit-duration` on the container so all nested transitions
+ * sets `--sk-loading-exit-duration` on the container so all nested transitions
  * use the same timing.
  *
  * @example
@@ -51,7 +51,7 @@ export const LoadingBoundary = forwardRef<HTMLElement, LoadingBoundaryProps>(
 
     const merged = {
       ...style,
-      '--sk-exit-duration': `${exitDuration}ms`,
+      '--sk-loading-exit-duration': `${exitDuration}ms`,
     } as CSSProperties;
 
     return (

@@ -21,7 +21,7 @@ export interface CollectionSkeletonProps<T> extends Omit<HTMLAttributes<HTMLElem
   renderItem: (item: T, index: number) => ReactNode;
   /** Number of placeholder rows during loading. */
   stubCount: number;
-  /** Crossfade duration in ms. Sets --sk-exit-duration for the opacity transition. */
+  /** Crossfade duration in ms. Sets --sk-loading-exit-duration for the opacity transition. */
   exitDuration: number;
   /** HTML element to render. Default: "div". */
   as?: ElementType;
@@ -46,7 +46,7 @@ function CollectionSkeletonInner<T>(
   const merged = {
     ...style,
     display: "grid",
-    '--sk-exit-duration': `${exitDuration}ms`,
+    '--sk-loading-exit-duration': `${exitDuration}ms`,
   } as CSSProperties;
 
   return (

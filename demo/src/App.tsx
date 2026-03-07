@@ -17,7 +17,7 @@ export function App() {
       <section className="py-16 px-6">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center gap-3 pb-4 border-b border-border/40">
-            <h2 className="text-xl font-semibold tracking-[-0.04em]">
+            <h2 className="sk-heading">
               Spatial Pre-allocation
             </h2>
             <span className="text-[11px] font-medium text-muted-foreground bg-muted rounded-full px-2.5 py-1">
@@ -34,11 +34,11 @@ export function App() {
       <CustomerFeed />
 
       <footer className="border-t border-border/40 py-16 text-center">
-        <p className="text-[13px] text-muted-foreground">
+        <p className="sk-caption">
           Built with{" "}
           <a
             href="https://github.com/ryandward/stablekit"
-            className="font-medium text-foreground hover:text-brand transition-colors duration-200 ease-standard"
+            className="font-medium text-foreground hover:text-brand sk-transition-colors"
             target="_blank"
             rel="noopener noreferrer"
           >

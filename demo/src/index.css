@@ -53,19 +53,261 @@
   --color-paradigm-animation-foreground: #BE123C;
   --color-paradigm-animation-border: #FECDD3;
 
-  /* ── Transition easing ── */
-  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  /* ── Typography scale ── */
+  --text-display: 2rem;
+  --text-body-lg: 1.125rem;
+  --text-body-sm: 13px;
+  --text-fine: 12px;
+  --text-micro: 11px;
+  --text-nano: 10px;
+
+  /* ── Transition timing ── */
+  --ease-standard: var(--sk-ease-standard);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 200ms;
+  --duration-normal: 300ms;
 }
 
 html {
   scroll-behavior: smooth;
 }
 
+
+/* ── Card: shared surface + hover lift ────────────────────────────────────── */
+
+.sk-card {
+  border-radius: var(--radius-xl, 0.75rem);
+  border: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
+  background-color: var(--color-card);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: transform var(--duration-normal) var(--ease-standard),
+              box-shadow var(--duration-normal) var(--ease-standard);
+}
+
+.sk-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+}
+
+/* ── Shared typography + micro-interaction classes ────────────────────────── */
+
+.sk-heading {
+  font-size: var(--text-xl, 1.25rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+
+.sk-caption {
+  font-size: 13px;
+  color: var(--color-muted-foreground);
+}
+
+.sk-card-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-muted-foreground);
+}
+
+.sk-badge {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-radius: 9999px;
+  border: 1px solid;
+  padding: 0.125rem 0.625rem;
+}
+
+.sk-badge[data-variant="active"] {
+  color: var(--color-success);
+  background-color: var(--color-success-subtle);
+  border-color: var(--color-success-border);
+}
+
+.sk-badge[data-variant="trial"] {
+  color: var(--color-warning);
+  background-color: var(--color-warning-subtle);
+  border-color: var(--color-warning-border);
+}
+
+.sk-badge[data-variant="churned"] {
+  color: var(--color-destructive);
+  background-color: var(--color-destructive-subtle);
+  border-color: var(--color-destructive-border);
+}
+
+.sk-form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-card-foreground);
+  margin-bottom: 0.25rem;
+}
+
+.sk-button {
+  border-radius: var(--radius-lg, 0.5rem);
+  padding: 0.5rem 1rem;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sk-button[data-variant="primary"] {
+  background-color: var(--color-brand);
+  color: var(--color-brand-foreground);
+}
+
+.sk-button[data-variant="primary"]:hover {
+  background-color: var(--color-brand-hover);
+}
+
+.sk-button[data-variant="secondary"] {
+  border: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+  font-weight: 500;
+  color: var(--color-muted-foreground);
+}
+
+.sk-button[data-variant="secondary"]:hover {
+  background-color: var(--color-muted);
+}
+
+/* ── SK Label (paradigm annotation badges) ────────────────────────────────── */
+
+.sk-label {
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.sk-label[data-visible="false"] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sk-label[data-paradigm="spatial"] {
+  color: var(--color-paradigm-spatial-foreground);
+  background-color: var(--color-paradigm-spatial);
+  border-color: var(--color-paradigm-spatial-border);
+}
+
+.sk-label[data-paradigm="temporal"] {
+  color: var(--color-paradigm-temporal-foreground);
+  background-color: var(--color-paradigm-temporal);
+  border-color: var(--color-paradigm-temporal-border);
+}
+
+.sk-label[data-paradigm="monotonic"] {
+  color: var(--color-paradigm-monotonic-foreground);
+  background-color: var(--color-paradigm-monotonic);
+  border-color: var(--color-paradigm-monotonic-border);
+}
+
+.sk-label[data-paradigm="animation"] {
+  color: var(--color-paradigm-animation-foreground);
+  background-color: var(--color-paradigm-animation);
+  border-color: var(--color-paradigm-animation-border);
+}
+
+/* ── CLS Counter rating badge ─────────────────────────────────────────────── */
+
+.sk-cls-badge[data-rating="none"],
+.sk-cls-badge[data-rating="good"] {
+  color: var(--color-success);
+  background-color: var(--color-success-subtle);
+  border-color: var(--color-success-border);
+}
+
+.sk-cls-badge[data-rating="needs-work"] {
+  color: var(--color-warning);
+  background-color: var(--color-warning-subtle);
+  border-color: var(--color-warning-border);
+}
+
+.sk-cls-badge[data-rating="poor"] {
+  color: var(--color-destructive);
+  background-color: var(--color-destructive-subtle);
+  border-color: var(--color-destructive-border);
+}
+
+/* ── Counter change sentiment ─────────────────────────────────────────────── */
+
+.sk-change[data-sentiment="positive"] {
+  color: var(--color-success);
+}
+
+.sk-change[data-sentiment="negative"] {
+  color: var(--color-destructive);
+}
+
+/* ── Form field error state ───────────────────────────────────────────────── */
+
+.sk-error-text {
+  font-size: 12px;
+  color: var(--color-destructive);
+  margin-top: 0.25rem;
+}
+
+.sk-input[data-error] {
+  border-color: color-mix(in srgb, var(--color-destructive) 60%, transparent);
+}
+
+/* ── Hero ──────────────────────────────────────────────────────────────────── */
+
+.sk-hero-glow {
+  background: radial-gradient(ellipse 70% 50% at 50% -10%, rgba(99, 102, 241, 0.07), transparent);
+}
+
+.sk-hero-pill {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* ── Mode toggle slider ───────────────────────────────────────────────────── */
+
+.sk-toggle-slider[data-enabled="true"] {
+  left: calc(50% + 2px);
+  background: linear-gradient(to right, var(--color-brand-from), var(--color-brand-to));
+  box-shadow: 0 1px 4px rgba(91, 74, 238, 0.3);
+}
+
+.sk-toggle-slider[data-enabled="false"] {
+  left: 0.25rem;
+  background-color: var(--color-card);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.sk-toggle-slider ~ button[data-active="true"] {
+  color: var(--color-foreground);
+}
+
+.sk-toggle-slider ~ button[data-active="false"] {
+  color: var(--color-muted-foreground);
+}
+
+.sk-toggle-slider[data-enabled="true"] ~ button[data-active="true"] {
+  color: var(--color-brand-foreground);
+}
+
+/* ── Customer card annotation ─────────────────────────────────────────────── */
+
+.sk-annotation[data-expanded="false"] {
+  opacity: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* ── Close button focus ring ──────────────────────────────────────────────── */
+
+.sk-morph-close:hover {
+  box-shadow: 0 0 0 2px rgba(91, 74, 238, 0.15);
+}
+
+.sk-transition-colors {
+  transition-property: color, background-color, border-color;
+  transition-duration: var(--duration-fast);
+  transition-timing-function: var(--ease-standard);
+}
+
 /* ── Canopy: frosted glass header ─────────────────────────────────────────── */
 
 .sk-canopy {
-  background-color: transparent;
+  background-color: rgba(243, 243, 247, 0.7);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-bottom: 1px solid rgba(9, 9, 11, 0.08);
@@ -96,10 +338,10 @@ body {
 
 /* OFF path: keyframe entrance on mount (no data-state ancestor) */
 .sk-morph-close {
-  animation: sk-morph-in 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: sk-morph-in var(--duration-normal) var(--ease-out-expo) both;
 }
 .sk-morph-avatar {
-  animation: sk-morph-avatar-in 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: sk-morph-avatar-in var(--duration-normal) var(--ease-out-expo) both;
 }
 
 /* ON path: suppress child keyframes — parent LayoutView handles transitions */
@@ -111,9 +353,9 @@ body {
 /* ON path: bidirectional morph transitions on LayoutView wrappers */
 .sk-layout-view:has(.sk-morph-close),
 .sk-layout-view:has(.sk-morph-avatar) {
-  transition: transform 400ms cubic-bezier(0.16, 1, 0.3, 1),
-              opacity 200ms cubic-bezier(0.4, 0, 0.2, 1),
-              visibility 200ms;
+  transition: transform var(--duration-normal) var(--ease-out-expo),
+              opacity var(--duration-fast) var(--ease-standard),
+              visibility var(--duration-fast);
 }
 
 .sk-layout-view:has(.sk-morph-close)[data-state="inactive"] {

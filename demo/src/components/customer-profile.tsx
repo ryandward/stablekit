@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { LoadingBoundary, StableText, MediaSkeleton, LayoutMap } from "stablekit";
 import { useStableKitMode } from "@/context/stablekit-mode";
 import { SKLabel } from "@/components/sk-label";
-import { statusBadgeColors } from "@/data/status";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { Customer } from "@/data/customers";
 
@@ -40,10 +40,10 @@ export function CustomerProfile({ customer }: CustomerProfileProps) {
               <img src={customer.avatar} alt={customer.name} />
             </MediaSkeleton>
             <div className="min-w-0">
-              <StableText as="p" className="text-xl font-semibold tracking-[-0.04em]">{customer.name}</StableText>
-              <StableText as="p" className="text-[13px] text-muted-foreground">{customer.title}</StableText>
-              <StableText as="p" className="text-[13px] text-muted-foreground">{customer.company}</StableText>
-              <StableText as="p" className="text-[13px] text-brand">{customer.email}</StableText>
+              <StableText as="p" className="sk-heading">{customer.name}</StableText>
+              <StableText as="p" className="sk-caption">{customer.title}</StableText>
+              <StableText as="p" className="sk-caption">{customer.company}</StableText>
+              <StableText as="p" className="text-body-sm text-brand">{customer.email}</StableText>
             </div>
           </div>
           <div className="mt-5">
@@ -74,7 +74,7 @@ export function CustomerProfile({ customer }: CustomerProfileProps) {
       </div>
 
       {loading ? (
-        <p className="py-8 text-center text-[13px] text-muted-foreground">Loading&hellip;</p>
+        <p className="py-8 text-center sk-caption">Loading&hellip;</p>
       ) : (
         <>
           <div className="flex gap-5">
@@ -84,10 +84,10 @@ export function CustomerProfile({ customer }: CustomerProfileProps) {
               className="size-24 rounded-lg flex-shrink-0"
             />
             <div className="min-w-0">
-              <p className="text-xl font-semibold tracking-[-0.04em]">{customer.name}</p>
-              <p className="text-[13px] text-muted-foreground">{customer.title}</p>
-              <p className="text-[13px] text-muted-foreground">{customer.company}</p>
-              <p className="text-[13px] text-brand">{customer.email}</p>
+              <p className="sk-heading">{customer.name}</p>
+              <p className="sk-caption">{customer.title}</p>
+              <p className="sk-caption">{customer.company}</p>
+              <p className="text-body-sm text-brand">{customer.email}</p>
             </div>
           </div>
           <div className="mt-5">
@@ -122,7 +122,7 @@ function TabBar({ activeTab, onTabChange }: { activeTab: Tab; onTabChange: (tab:
           type="button"
           onClick={() => onTabChange(tab)}
           className={cn(
-            "pb-2.5 text-[13px] font-medium capitalize transition-colors duration-200 ease-standard",
+            "pb-2.5 text-body-sm font-medium capitalize sk-transition-colors",
             activeTab === tab
               ? "border-b-2 border-brand text-foreground"
               : "text-muted-foreground hover:text-foreground",
@@ -139,30 +139,23 @@ function ProfileContent({ customer }: { customer: Customer }) {
   return (
     <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
       <div>
-        <p className="text-[13px] text-muted-foreground">Status</p>
+        <p className="sk-caption">Status</p>
         <p className="mt-0.5">
-          <span
-            className={cn(
-              "text-[10px] font-semibold uppercase tracking-[0.08em] rounded-full border px-2.5 py-0.5",
-              statusBadgeColors[customer.status],
-            )}
-          >
-            {customer.status}
-          </span>
+          <Badge variant={customer.status}>{customer.status}</Badge>
         </p>
       </div>
       <div>
-        <p className="text-[13px] text-muted-foreground">MRR</p>
+        <p className="sk-caption">MRR</p>
         <p className="mt-0.5 text-2xl font-semibold tabular-nums tracking-[-0.04em]">
           ${customer.mrr.toLocaleString()}
         </p>
       </div>
       <div>
-        <p className="text-[13px] text-muted-foreground">Join Date</p>
+        <p className="sk-caption">Join Date</p>
         <p className="mt-0.5 font-medium">{customer.joinDate}</p>
       </div>
       <div>
-        <p className="text-[13px] text-muted-foreground">Email</p>
+        <p className="sk-caption">Email</p>
         <p className="mt-0.5 font-medium truncate">{customer.email}</p>
       </div>
     </div>
@@ -174,9 +167,9 @@ function InvoiceContent({ customer }: { customer: Customer }) {
     <table className="w-full text-sm">
       <thead>
         <tr className="border-b border-border/40 text-muted-foreground">
-          <th className="pb-2 text-left text-[13px] font-medium">Date</th>
-          <th className="pb-2 text-left text-[13px] font-medium">Description</th>
-          <th className="pb-2 text-right text-[13px] font-medium">Amount</th>
+          <th className="pb-2 text-left text-body-sm font-medium">Date</th>
+          <th className="pb-2 text-left text-body-sm font-medium">Description</th>
+          <th className="pb-2 text-right text-body-sm font-medium">Amount</th>
         </tr>
       </thead>
       <tbody className="divide-y divide-border/30">

@@ -1,10 +1,13 @@
 import {
   forwardRef,
   useInsertionEffect,
+  useLayoutEffect,
+  useRef,
   type HTMLAttributes,
   type ElementType,
 } from "react";
 import { usePresence } from "../primitives/use-presence";
+import { mergeRefs } from "../internal/merge-refs";
 import { injectStyles } from "../internal/inject-styles";
 
 export interface FadeTransitionProps extends HTMLAttributes<HTMLElement> {
@@ -31,9 +34,21 @@ export interface FadeTransitionProps extends HTMLAttributes<HTMLElement> {
  * ```
  */
 export const FadeTransition = forwardRef<HTMLElement, FadeTransitionProps>(
-  function FadeTransition({ show, as: Tag = "div", className, children, ...props }, ref) {
+  function FadeTransition({ show, as: Tag = "div", className, style, children, ...props }, fwdRef) {
     useInsertionEffect(injectStyles, []);
     const { mounted, phase, onAnimationEnd } = usePresence(show);
+    const innerRef = useRef<HTMLElement>(null);
+
+    // Measure actual height when exiting so the collapse animation
+    // maps 1:1 to visible pixels instead of a hardcoded fallback.
+    useLayoutEffect(() => {
+      if (phase === "exiting" && innerRef.current) {
+        innerRef.current.style.setProperty(
+          "--sk-fade-height",
+          `${innerRef.current.scrollHeight}px`,
+        );
+      }
+    }, [phase]);
 
     if (!mounted) return null;
 
@@ -50,8 +65,9 @@ export const FadeTransition = forwardRef<HTMLElement, FadeTransitionProps>(
 
     return (
       <Tag
-        ref={ref}
+        ref={mergeRefs(innerRef, fwdRef)}
         className={merged}
+        style={style}
         onAnimationEnd={onAnimationEnd}
         {...props}
       >

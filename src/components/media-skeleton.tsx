@@ -135,7 +135,7 @@ export function MediaSkeleton({
         style: {
           ...CHILD_STYLE,
           opacity: showShimmer ? 0 : 1,
-          transition: "opacity var(--sk-exit-duration, 150ms) ease-out",
+          transition: "opacity var(--sk-loading-exit-duration, 400ms) var(--sk-ease-decelerate)",
           ...(child.props as { style?: CSSProperties }).style,
         },
       } as Record<string, unknown>)

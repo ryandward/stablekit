@@ -7,17 +7,22 @@ import { CustomerCard } from "@/components/customer-card";
 
 export function CustomerFeed() {
   const { enabled } = useStableKitMode();
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const handleToggle = (id: string) => {
-    setExpandedId((prev) => (prev === id ? null : id));
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
   const cardList = customers.map((customer) => (
     <CustomerCard
       key={customer.id}
       customer={customer}
-      expanded={expandedId === customer.id}
+      expanded={expandedIds.has(customer.id)}
       onToggleExpand={() => handleToggle(customer.id)}
     />
   ));
@@ -27,10 +32,10 @@ export function CustomerFeed() {
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-3 pb-4 border-b border-border/40">
-          <h2 className="text-xl font-semibold tracking-[-0.04em]">
+          <h2 className="sk-heading">
             Customer Directory
           </h2>
-          <span className="text-[11px] font-medium text-muted-foreground bg-muted rounded-full px-2.5 py-1">
+          <span className="text-micro font-medium text-muted-foreground bg-muted rounded-full px-2.5 py-1">
             {customers.length} accounts
           </span>
           <SKLabel component="SizeRatchet" paradigm="monotonic" />

@@ -22,8 +22,9 @@ export function CLSCounter() {
       const observer = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
           // Only count shifts that weren't caused by user input
-          if (!(entry as any).hadRecentInput) {
-            setCls((prev) => prev + (entry as any).value);
+          const shift = entry as PerformanceEntry & { hadRecentInput: boolean; value: number };
+          if (!shift.hadRecentInput) {
+            setCls((prev) => prev + shift.value);
           }
         }
       });
@@ -37,22 +38,24 @@ export function CLSCounter() {
 
   const score = cls;
   const rating =
-    score === 0
-      ? { label: "None", color: "text-success bg-success-subtle border-success-border" }
-      : score <= 0.1
-        ? { label: "Good", color: "text-success bg-success-subtle border-success-border" }
-        : score <= 0.25
-          ? { label: "Needs Work", color: "text-warning bg-warning-subtle border-warning-border" }
-          : { label: "Poor", color: "text-destructive bg-destructive-subtle border-destructive-border" };
+    score === 0 ? "none"
+      : score <= 0.1 ? "good"
+        : score <= 0.25 ? "needs-work"
+          : "poor";
+  const ratingLabel =
+    score === 0 ? "None"
+      : score <= 0.1 ? "Good"
+        : score <= 0.25 ? "Needs Work"
+          : "Poor";
 
   return (
     <div className="flex items-center gap-2.5">
-      <span className="text-[11px] font-medium text-muted-foreground/60">
+      <span className="text-micro font-medium text-muted-foreground/60">
         CLS
       </span>
-      <div className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-semibold tabular-nums ${rating.color}`}>
+      <div className="sk-cls-badge inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-micro font-semibold tabular-nums" data-rating={rating}>
         <span>{score.toFixed(3)}</span>
-        <span className="font-normal opacity-60">{rating.label}</span>
+        <span className="font-normal opacity-60">{ratingLabel}</span>
       </div>
     </div>
   );
