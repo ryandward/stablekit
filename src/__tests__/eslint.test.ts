@@ -8,6 +8,7 @@ function lint(code: string, options?: Parameters<typeof createArchitectureLint>[
     options ?? { stateTokens: ["success", "warning", "destructive"] },
   );
   return linter.verify(code, {
+    plugins: config.plugins as Record<string, Linter.Plugin>,
     rules: config.rules as Linter.RulesRecord,
     languageOptions: {
       parserOptions: { ecmaFeatures: { jsx: true } },
@@ -874,38 +875,78 @@ describe("className on custom components", () => {
   });
 });
 
-// ── Category 6: Dual-paradigm conflict ──────────────────────
+// ── Category 6: Dual-paradigm conflict (scope-aware custom rule) ─────
 
-describe("loading prop + variable children conflict", () => {
-  it("catches <Button loading={x}>{label}</Button>", () => {
+describe("loading prop + conditional variable children conflict", () => {
+  it("catches local variable from ternary as children of loading component", () => {
     expectError(
-      `<Button loading={isLoading}>{buttonLabel}</Button>`,
-      "Variable children inside a component with a loading prop",
+      `function Foo() {
+        const label = x ? "Loading..." : "Submit";
+        return <Button loading={x}>{label}</Button>;
+      }`,
+      "Conditional variable as children",
     );
   });
 
-  it("catches <Card loading={x}>{content}</Card>", () => {
+  it("catches local variable from logical expression as children", () => {
     expectError(
-      `<Card loading={fetching}>{cardContent}</Card>`,
-      "Variable children inside a component with a loading prop",
+      `function Foo() {
+        const label = x && "Loading...";
+        return <Button loading={x}>{label}</Button>;
+      }`,
+      "Conditional variable as children",
+    );
+  });
+
+  it("catches local variable from template literal as children", () => {
+    expectError(
+      `function Foo() {
+        const label = \`Confirm (\${count})\`;
+        return <Button loading={x}>{label}</Button>;
+      }`,
+      "Conditional variable as children",
+    );
+  });
+
+  it("allows props (function parameters) as children with loading", () => {
+    expectClean(
+      `function Foo({ confirmLabel }) {
+        return <Button loading={x}>{confirmLabel}</Button>;
+      }`,
     );
   });
 
   it("allows static string children with loading", () => {
     expectClean(
-      `<Button loading={isLoading}>Submit</Button>`,
+      `function Foo() {
+        return <Button loading={isLoading}>Submit</Button>;
+      }`,
     );
   });
 
   it("allows JSX element children with loading", () => {
     expectClean(
-      `<Button loading={isLoading}><span>Submit</span></Button>`,
+      `function Foo() {
+        return <Button loading={isLoading}><span>Submit</span></Button>;
+      }`,
+    );
+  });
+
+  it("allows static local variable as children with loading", () => {
+    expectClean(
+      `function Foo() {
+        const label = "Submit";
+        return <Button loading={isLoading}>{label}</Button>;
+      }`,
     );
   });
 
   it("allows LoadingBoundary with variable children (default passthrough)", () => {
     expectClean(
-      `<LoadingBoundary loading={isLoading}>{content}</LoadingBoundary>`,
+      `function Foo() {
+        const content = x ? <A /> : <B />;
+        return <LoadingBoundary loading={isLoading}>{content}</LoadingBoundary>;
+      }`,
     );
   });
 
@@ -917,8 +958,20 @@ describe("loading prop + variable children conflict", () => {
 
   it("respects custom loadingPassthrough", () => {
     expectClean(
-      `<Skeleton loading={true}>{content}</Skeleton>`,
+      `function Foo() {
+        const content = x ? <A /> : <B />;
+        return <Skeleton loading={true}>{content}</Skeleton>;
+      }`,
       { stateTokens: [], loadingPassthrough: ["LoadingBoundary", "Skeleton"] },
+    );
+  });
+
+  it("does not flag component without loading prop", () => {
+    expectClean(
+      `function Foo() {
+        const label = x ? "A" : "B";
+        return <Button>{label}</Button>;
+      }`,
     );
   });
 });

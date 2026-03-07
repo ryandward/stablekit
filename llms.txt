@@ -317,6 +317,19 @@ change to structure requires editing `.css`, a boundary has leaked.
      or use a StableKit component (for state-driven swaps — StateSwap,
      LayoutMap, LoadingBoundary, FadeTransition, StableField, StableCounter,
      LayoutGroup). These rules are always on.
+     `className` on PascalCase components is banned — components own their own
+     styling. Use `classNamePassthrough` to exempt transparent wrappers (e.g.
+     `StableText`, `MediaSkeleton`, Lucide icons) that forward className to
+     their root element.
+     A custom rule (`stablekit/no-loading-conflict`) catches dual-paradigm
+     conflicts: if a component has a `loading` prop (which triggers an internal
+     content swap via StateSwap), children must not be variables derived from
+     conditional expressions. The `loading` prop controls geometry — if children
+     also change, both sides shrink simultaneously and pre-allocation is
+     defeated. Props (function parameters) are allowed because they are static
+     per mount. Use `loadingPassthrough` to exempt components where `loading`
+     does not trigger a content swap (e.g. `LoadingBoundary` controls opacity,
+     not geometry). Default passthrough: `["LoadingBoundary"]`.
   4. **Stylelint** (`stablekit/stylelint`) — `createStyleLint({ functionalTokens })`
      bans element selectors in CSS (`& svg`, `& span`), bans `!important`, and
      bans functional color tokens inside `@utility` blocks. `functionalTokens`

@@ -30,10 +30,12 @@
  *    component is a presentation leak across the Structure boundary.
  *    The component should own its own styling. Always on.
  *
- * 6. Dual-paradigm conflict — a component with a `loading` prop does
- *    internal content swapping (StateSwap). If children are also variable,
- *    both sides of the swap change simultaneously, defeating pre-allocation.
- *    Children of loading-swappable components must be static.
+ * 6. Dual-paradigm conflict (custom rule with scope analysis) — a component
+ *    with a `loading` prop does internal content swapping (StateSwap). If
+ *    children are a variable derived from a conditional expression, both
+ *    sides of the swap change simultaneously, defeating pre-allocation.
+ *    Only flags locals initialized with ternaries/logical expressions.
+ *    Props (function parameters) are allowed — they're static per mount.
  */
 
 export interface ArchitectureLintOptions {
@@ -68,6 +70,113 @@ export interface ArchitectureLintOptions {
    *  @default ["src/components/**\/*.{tsx,jsx}"] */
   files?: string[];
 }
+
+// ── Custom rule: no-loading-conflict ──────────────────────────────────────
+// Uses scope analysis to only flag variables derived from conditional
+// expressions. Props (function parameters) are allowed.
+
+interface ScopeVariable {
+  defs: Array<{
+    type: string;
+    node: { init?: { type: string } };
+  }>;
+}
+
+interface Scope {
+  set: Map<string, ScopeVariable>;
+  upper: Scope | null;
+}
+
+function findVariable(scope: Scope, name: string): ScopeVariable | null {
+  let current: Scope | null = scope;
+  while (current) {
+    const variable = current.set.get(name);
+    if (variable) return variable;
+    current = current.upper;
+  }
+  return null;
+}
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const noLoadingConflictRule: any = {
+  meta: {
+    type: "problem",
+    schema: [
+      {
+        type: "object",
+        properties: {
+          passthrough: { type: "array", items: { type: "string" } },
+        },
+        additionalProperties: false,
+      },
+    ],
+    messages: {
+      conflict:
+        "Conditional variable as children of a component with a loading prop. " +
+        "The loading prop triggers an internal content swap — if children also " +
+        "change, both sides shrink simultaneously and pre-allocation is defeated. " +
+        "Use static children with the loading prop, or handle the entire swap " +
+        "explicitly with <StateSwap> in the caller.",
+    },
+  },
+  create(context: any) {
+    const passthrough: string[] = context.options[0]?.passthrough ?? [];
+
+    return {
+      JSXElement(node: any) {
+        const opening = node.openingElement;
+
+        // Must be PascalCase (custom component)
+        if (opening.name?.type !== "JSXIdentifier") return;
+        const name: string = opening.name.name;
+        if (!/^[A-Z]/.test(name)) return;
+
+        // Skip passthrough components
+        if (passthrough.includes(name)) return;
+
+        // Must have a loading prop
+        const hasLoading = opening.attributes.some(
+          (attr: any) =>
+            attr.type === "JSXAttribute" &&
+            attr.name?.name === "loading",
+        );
+        if (!hasLoading) return;
+
+        // Check children for variable references derived from conditionals
+        for (const child of node.children) {
+          if (child.type !== "JSXExpressionContainer") continue;
+          const expr = child.expression;
+          if (expr.type !== "Identifier") continue;
+
+          // Look up variable binding via scope analysis
+          const scope: Scope = context.sourceCode
+            ? context.sourceCode.getScope(node)
+            : context.getScope();
+          const variable = findVariable(scope, expr.name);
+          if (!variable) continue;
+
+          for (const def of variable.defs) {
+            // Props (function parameters) are static per mount — allow
+            if (def.type === "Parameter") continue;
+
+            // Local variable — check if initialized with a conditional
+            if (def.type === "Variable" && def.node.init) {
+              const initType = def.node.init.type;
+              if (
+                initType === "ConditionalExpression" ||
+                initType === "LogicalExpression" ||
+                initType === "TemplateLiteral"
+              ) {
+                context.report({ node: expr, messageId: "conflict" });
+              }
+            }
+          }
+        }
+      },
+    };
+  },
+};
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export function createArchitectureLint(options: ArchitectureLintOptions) {
   const {
@@ -277,14 +386,15 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
               },
             ]),
 
-        // --- 6. Dual-paradigm conflict (loading + variable children) ---
-
-        {
-          selector: `JSXElement:has(JSXOpeningElement[name.name=/^[A-Z]/]:not([name.name=/^(${loadingPassthrough.join("|")})$/]) > JSXAttribute[name.name='loading']) > JSXExpressionContainer > Identifier`,
-          message:
-            "Variable children inside a component with a loading prop. The loading prop triggers an internal content swap — if children also change, both sides shrink simultaneously and pre-allocation is defeated. Use static children with the loading prop, or handle the entire swap explicitly with <StateSwap> in the caller.",
-        },
       ],
+      "stablekit/no-loading-conflict": ["error", { passthrough: loadingPassthrough }],
+    },
+    plugins: {
+      stablekit: {
+        rules: {
+          "no-loading-conflict": noLoadingConflictRule,
+        },
+      },
     },
   };
 }
