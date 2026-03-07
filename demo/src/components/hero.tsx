@@ -23,7 +23,7 @@ export function Hero() {
           style={{ fontSize: "clamp(2.75rem, 6vw, 4.5rem)" }}
         >
           Layout shift isn&rsquo;t a state&nbsp;problem.
-          <br className="hidden sm:block" />
+          <br className="hidden sm:block" />{" "}
           It&rsquo;s structural.
         </h1>
 

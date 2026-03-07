@@ -1,5 +1,5 @@
 import { FadeTransition, StateSwap } from "stablekit";
-import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import { useStableKitMode } from "@/context/stablekit-mode";
 import { SKLabel } from "@/components/sk-label";
 import { Badge } from "@/components/ui/badge";
@@ -38,13 +38,20 @@ export function CustomerCard({
   );
 
   const avatar = (
-    <img
-      src={customer.avatar}
-      alt={customer.name}
-      width={48}
-      height={48}
-      className="sk-morph-avatar size-12 rounded-lg bg-muted"
-    />
+    <button
+      type="button"
+      onClick={onToggleExpand}
+      className="sk-morph-avatar size-12 rounded-lg bg-muted cursor-pointer overflow-hidden p-0 border-0"
+      aria-label="View details"
+    >
+      <img
+        src={customer.avatar}
+        alt={customer.name}
+        width={48}
+        height={48}
+        className="size-12 rounded-lg"
+      />
+    </button>
   );
 
   return (
@@ -87,21 +94,8 @@ export function CustomerCard({
             onClick={onToggleExpand}
             className={detailsButtonClass}
           >
-            {enabled ? (
-              <>
-                <StateSwap state={expanded} true="Close" false="Details" />
-                <StateSwap
-                  state={expanded}
-                  true={<ChevronUp size={14} />}
-                  false={<ChevronDown size={14} />}
-                />
-              </>
-            ) : (
-              <>
-                {expanded ? "Close" : "Details"}
-                {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-              </>
-            )}
+            Details
+            <ChevronDown size={14} className="sk-chevron" data-expanded={expanded} />
           </button>
         </div>
       </div>

@@ -284,6 +284,16 @@ html {
   color: var(--color-brand-foreground);
 }
 
+/* ── Chevron rotation ────────────────────────────────────────────────────── */
+
+.sk-chevron {
+  transition: transform var(--duration-normal) var(--ease-out-expo);
+}
+
+.sk-chevron[data-expanded="true"] {
+  transform: rotate(180deg);
+}
+
 /* ── Customer card annotation ─────────────────────────────────────────────── */
 
 .sk-annotation[data-expanded="false"] {
