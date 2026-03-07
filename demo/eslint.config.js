@@ -7,5 +7,6 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   createArchitectureLint({
     stateTokens: ["success", "warning", "destructive", "paradigm"],
+    variantProps: ["variant"],
   }),
 );

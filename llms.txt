@@ -290,11 +290,12 @@ change to structure requires editing `.css`, a boundary has leaked.
      preventing consumers from injecting appearance at the Structure layer.
   2. CSS uses `[data-variant="..."]` attribute selectors to map contract values
      to visual styles.
-  3. **ESLint** (`stablekit/eslint`) — `createArchitectureLint({ stateTokens })`
+  3. **ESLint** (`stablekit/eslint`) — `createArchitectureLint({ stateTokens, variantProps })`
      bans data-dependent visual properties in JS (state tokens like
      `text-success`, conditional style ternaries) and hardcoded visual values
      (`rgba()`, hex codes). `stateTokens` declares your project's functional
-     color vocabulary.
+     color vocabulary. `variantProps` declares prop names from `createPrimitive`
+     — bans ternaries like `intent={x ? "primary" : "outline"}`.
   4. **Stylelint** (`stablekit/stylelint`) — `createStyleLint()` bans element
      selectors in CSS (`& svg { color }`, `& span { font-weight }`). If a child
      needs color, set it on the container and let `currentColor` inherit, or give

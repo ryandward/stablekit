@@ -2,7 +2,7 @@
  * Architecture Linter Factory
  *
  * Creates an ESLint flat config that enforces the Structure → Presentation
- * boundary. Two categories of violation:
+ * boundary. Three categories of violation:
  *
  * 1. Hardcoded design tokens — raw font sizes, hex/rgba colors in JS.
  *    These are universal rules that apply to every project.
@@ -10,6 +10,10 @@
  * 2. Data-dependent visual decisions — state color tokens in className
  *    strings and conditional style ternaries. The token list is
  *    project-specific — you declare your vocabulary.
+ *
+ * 3. Ternaries on variant props — if a variant prop created by
+ *    createPrimitive has a ternary, the visual decision is in JS.
+ *    Declare which prop names to check.
  */
 
 export interface ArchitectureLintOptions {
@@ -17,13 +21,21 @@ export interface ArchitectureLintOptions {
    *  e.g. ["success", "warning", "destructive", "canceled"] */
   stateTokens: string[];
 
+  /** Variant prop names from createPrimitive that should never have ternaries.
+   *  e.g. ["intent", "variant"] — bans intent={x ? "a" : "b"} */
+  variantProps?: string[];
+
   /** Glob patterns for files to lint.
    *  @default ["src/components/**\/*.{tsx,jsx}"] */
   files?: string[];
 }
 
 export function createArchitectureLint(options: ArchitectureLintOptions) {
-  const { stateTokens, files = ["src/components/**/*.{tsx,jsx}"] } = options;
+  const {
+    stateTokens,
+    variantProps = [],
+    files = ["src/components/**/*.{tsx,jsx}"],
+  } = options;
 
   const tokenPattern = stateTokens.join("|");
 
@@ -66,6 +78,13 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
           message:
             "Conditional style object. Use a data-state attribute and CSS selector.",
         },
+
+        // --- 3. Ternaries on variant props (from createPrimitive) ---
+
+        ...variantProps.map((prop) => ({
+          selector: `JSXAttribute[name.name='${prop}'] ConditionalExpression`,
+          message: `Data-dependent ${prop}. Use a data-attribute and CSS selector instead of switching ${prop} with a ternary.`,
+        })),
       ],
     },
   };

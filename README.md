@@ -135,11 +135,16 @@ import { createArchitectureLint } from "stablekit/eslint";
 export default [
   createArchitectureLint({
     stateTokens: ["success", "warning", "destructive"],
+    variantProps: ["variant", "intent"],
   }),
 ];
 ```
 
-`stateTokens` declares your project's functional color vocabulary — the token names that represent data-dependent state. The linter flags `bg-success`, `text-warning`, etc. in className strings (these should use `data-*` attributes and CSS). It also catches hardcoded hex/rgba colors and conditional style ternaries universally.
+`stateTokens` declares your project's functional color vocabulary — the token names that represent data-dependent state. The linter flags `bg-success`, `text-warning`, etc. in className strings (these should use `data-*` attributes and CSS).
+
+`variantProps` declares the prop names from your `createPrimitive` calls. The linter flags ternaries on these props — `intent={x ? "primary" : "outline"}` is a visual decision in JS. If a variant changes based on data, the component should use a data-attribute and CSS should handle the visual difference.
+
+It also catches hardcoded hex/rgba colors and conditional style ternaries universally.
 
 **Stylelint** (`stablekit/stylelint`) — catches CSS targeting child elements by tag name:
 
