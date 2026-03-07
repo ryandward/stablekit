@@ -17,7 +17,27 @@
         "default": "./dist/index.cjs"
       }
     },
-    "./styles.css": "./dist/styles.css"
+    "./styles.css": "./dist/styles.css",
+    "./eslint": {
+      "import": {
+        "types": "./dist/eslint.d.ts",
+        "default": "./dist/eslint.js"
+      },
+      "require": {
+        "types": "./dist/eslint.d.cts",
+        "default": "./dist/eslint.cjs"
+      }
+    },
+    "./stylelint": {
+      "import": {
+        "types": "./dist/stylelint.d.ts",
+        "default": "./dist/stylelint.js"
+      },
+      "require": {
+        "types": "./dist/stylelint.d.cts",
+        "default": "./dist/stylelint.cjs"
+      }
+    }
   },
   "files": [
     "dist",

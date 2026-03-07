@@ -122,9 +122,35 @@ CSS owns the visuals:
 
 Changing a color means editing CSS. Never a component file.
 
-### Architecture Linter
+### Architecture Linters
 
-The demo includes a reference ESLint config (`demo/eslint.config.js`) that catches visual decisions leaking into JS — hardcoded colors, conditional style ternaries, state tokens in className strings. Copy and adapt it for your project (the token vocabulary is project-specific).
+StableKit ships two linter factories that enforce the Structure → Presentation boundary on both sides:
+
+**ESLint** (`stablekit/eslint`) — catches visual decisions leaking into JS:
+
+```js
+// eslint.config.js
+import { createArchitectureLint } from "stablekit/eslint";
+
+export default [
+  createArchitectureLint({
+    stateTokens: ["success", "warning", "destructive"],
+  }),
+];
+```
+
+`stateTokens` declares your project's functional color vocabulary — the token names that represent data-dependent state. The linter flags `bg-success`, `text-warning`, etc. in className strings (these should use `data-*` attributes and CSS). It also catches hardcoded hex/rgba colors and conditional style ternaries universally.
+
+**Stylelint** (`stablekit/stylelint`) — catches CSS targeting child elements by tag name:
+
+```js
+// stylelint.config.js
+import { createStyleLint } from "stablekit/stylelint";
+
+export default createStyleLint();
+```
+
+This bans element selectors like `& svg { color: green }`. If a child needs color, set it on the container and let `currentColor` inherit, or give the child its own class/data-attribute. Also bans `!important`.
 
 ## How It Works
 

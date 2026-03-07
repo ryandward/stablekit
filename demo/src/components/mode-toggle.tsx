@@ -18,7 +18,7 @@ export function ModeToggle() {
         <button
           type="button"
           onClick={enabled ? toggle : undefined}
-          className="relative z-10 flex-1 rounded-full text-body-sm font-semibold sk-transition-colors"
+          className="sk-toggle-btn relative z-10 flex-1 rounded-full text-body-sm font-semibold sk-transition-colors"
           data-active={!enabled}
         >
           Off
@@ -26,7 +26,7 @@ export function ModeToggle() {
         <button
           type="button"
           onClick={!enabled ? toggle : undefined}
-          className="relative z-10 flex-1 rounded-full text-body-sm font-semibold sk-transition-colors"
+          className="sk-toggle-btn relative z-10 flex-1 rounded-full text-body-sm font-semibold sk-transition-colors"
           data-active={enabled}
         >
           On

@@ -272,15 +272,15 @@ html {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
-.sk-toggle-slider ~ button[data-active="true"] {
+.sk-toggle-slider ~ .sk-toggle-btn[data-active="true"] {
   color: var(--color-foreground);
 }
 
-.sk-toggle-slider ~ button[data-active="false"] {
+.sk-toggle-slider ~ .sk-toggle-btn[data-active="false"] {
   color: var(--color-muted-foreground);
 }
 
-.sk-toggle-slider[data-enabled="true"] ~ button[data-active="true"] {
+.sk-toggle-slider[data-enabled="true"] ~ .sk-toggle-btn[data-active="true"] {
   color: var(--color-brand-foreground);
 }
 

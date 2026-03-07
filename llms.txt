@@ -285,20 +285,22 @@ change to structure requires editing `.css`, a boundary has leaked.
   the union type, it is a compile error.
 - **Contract → Structure:** TypeScript compiler. Component props reference the
   contract type (`variant: Status`), so invalid values are compile errors.
-- **Structure → Presentation:** Three mechanisms:
-  1. Dumb UI primitives `Omit<>` the `className` and `style` props, preventing
-     consumers from injecting appearance at the Structure layer.
+- **Structure → Presentation:** Four mechanisms:
+  1. `createPrimitive` blocks `className` and `style` at the type level,
+     preventing consumers from injecting appearance at the Structure layer.
   2. CSS uses `[data-variant="..."]` attribute selectors to map contract values
      to visual styles.
-  3. **ESLint (`demo/eslint.config.js`) is mandatory.** It enforces the
-     Structure → Presentation boundary by banning two patterns:
-     - Data-dependent visual properties in JS (state tokens like
-       `text-success`, conditional style ternaries). These belong in CSS via
-       `data-*` attributes.
-     - Hardcoded visual values in JS (`rgba()`, hex codes). These belong in
-       CSS custom properties.
-     Run `npx eslint src/components/` before committing. Zero errors is the
-     requirement — do not add `eslint-disable` comments to bypass these rules.
+  3. **ESLint** (`stablekit/eslint`) — `createArchitectureLint({ stateTokens })`
+     bans data-dependent visual properties in JS (state tokens like
+     `text-success`, conditional style ternaries) and hardcoded visual values
+     (`rgba()`, hex codes). `stateTokens` declares your project's functional
+     color vocabulary.
+  4. **Stylelint** (`stablekit/stylelint`) — `createStyleLint()` bans element
+     selectors in CSS (`& svg { color }`, `& span { font-weight }`). If a child
+     needs color, set it on the container and let `currentColor` inherit, or give
+     the child its own class/data-attribute. Also bans `!important`.
+     Run `npx eslint src/components/` and `npx stylelint "src/**/*.css"` before
+     committing. Zero errors is the requirement — do not add disable comments.
 
 ### Example: Badge
 
