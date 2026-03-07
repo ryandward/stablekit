@@ -296,10 +296,11 @@ change to structure requires editing `.css`, a boundary has leaked.
      (`rgba()`, hex codes). `stateTokens` declares your project's functional
      color vocabulary. `variantProps` declares prop names from `createPrimitive`
      — bans ternaries like `intent={x ? "primary" : "outline"}`.
-  4. **Stylelint** (`stablekit/stylelint`) — `createStyleLint()` bans element
-     selectors in CSS (`& svg { color }`, `& span { font-weight }`). If a child
-     needs color, set it on the container and let `currentColor` inherit, or give
-     the child its own class/data-attribute. Also bans `!important`.
+  4. **Stylelint** (`stablekit/stylelint`) — `createStyleLint({ functionalTokens })`
+     bans element selectors in CSS (`& svg`, `& span`), bans `!important`, and
+     bans functional color tokens inside `@utility` blocks. `functionalTokens`
+     declares CSS custom property prefixes (e.g. `["--color-status-"]`) that must
+     not appear in `@utility` — they belong in scoped selectors only.
      Run `npx eslint src/components/` and `npx stylelint "src/**/*.css"` before
      committing. Zero errors is the requirement — do not add disable comments.
 

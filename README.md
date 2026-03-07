@@ -152,10 +152,12 @@ It also catches hardcoded hex/rgba colors and conditional style ternaries univer
 // stylelint.config.js
 import { createStyleLint } from "stablekit/stylelint";
 
-export default createStyleLint();
+export default createStyleLint({
+  functionalTokens: ["--color-status-", "--color-danger"],
+});
 ```
 
-This bans element selectors like `& svg { color: green }`. If a child needs color, set it on the container and let `currentColor` inherit, or give the child its own class/data-attribute. Also bans `!important`.
+This bans element selectors like `& svg { color: green }` — set color on the container and let `currentColor` inherit. Bans `!important`. And with `functionalTokens`, bans functional color tokens inside `@utility` blocks — `@utility text-status-success { color: var(--color-status-active) }` is an error because it launders a functional color into a reusable className, crossing back from Presentation into Structure.
 
 ## How It Works
 
