@@ -22,10 +22,10 @@
  *
  * 4. Geometric instability — conditional content in JSX children that
  *    causes layout shift: ternary swaps, && mounts, || / ?? fallbacks,
- *    interpolated template literals, and conditional hidden props.
- *    Each message guides toward extracting the expression to a variable
- *    (for data transforms) or using a StableKit component (for
- *    state-driven swaps). Always on.
+ *    interpolated template literals, and sibling hidden swaps (two+
+ *    siblings using conditional hidden to toggle visibility without
+ *    reserving space for each other). A single hidden={condition} is
+ *    fine and not flagged. Always on.
  *
  * 5. className on custom components — passing className to a PascalCase
  *    component is a presentation leak across the Structure boundary.
@@ -368,13 +368,17 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
             "Interpolated text in JSX children. Extract to a const above the return (the linter won't flag a plain variable). For state-driven values, use <StableCounter> for numbers or <StateSwap> for text variants.",
         },
 
-        // --- 4b. Conditional hidden prop (geometric instability) ---
+        // --- 4b. Sibling hidden swap (geometric instability) ---
+        // Two sibling elements both using conditional hidden to swap
+        // visibility — neither reserves space for the other.
+        // A single hidden={condition} (e.g. error message at bottom of
+        // layout) is fine and intentionally not flagged.
 
         {
           selector:
-            "JSXAttribute[name.name='hidden'] > JSXExpressionContainer > :not(Literal)",
+            "JSXElement:has(JSXOpeningElement JSXAttribute[name.name='hidden'] > JSXExpressionContainer > :not(Literal)) ~ JSXElement:has(JSXOpeningElement JSXAttribute[name.name='hidden'] > JSXExpressionContainer > :not(Literal))",
           message:
-            "Conditional hidden prop causes layout shift — the element occupies zero space when hidden, then expands when shown. Use <StateSwap> to pre-allocate geometry for all visual states.",
+            "Sibling elements swap visibility with conditional hidden — neither reserves space for the other, causing layout shift. Use <StateSwap> for two states or <LayoutMap> for multiple states.",
         },
 
         // --- 5. className on firewalled components ---

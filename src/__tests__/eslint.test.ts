@@ -811,49 +811,32 @@ describe("interpolated text in JSX children", () => {
   });
 });
 
-// ── Category 4b: Conditional hidden prop ────────────────────────
+// ── Category 4b: Sibling hidden swap ────────────────────────────
 
-describe("conditional hidden prop (layout shift)", () => {
-  it("catches hidden={condition || undefined}", () => {
+describe("sibling hidden swap (layout shift)", () => {
+  it("catches two siblings with complementary conditional hidden", () => {
     expectError(
-      `<Button hidden={status !== "active" || undefined}>Pause</Button>`,
-      "Conditional hidden prop",
+      `<><Button hidden={isPaused}>Resume</Button><Button hidden={!isPaused}>Pause</Button></>`,
+      "Sibling elements swap",
     );
   });
 
-  it("catches hidden={!x}", () => {
+  it("catches siblings with || undefined pattern", () => {
     expectError(
-      `<Button hidden={!isActive}>Resume</Button>`,
-      "Conditional hidden prop",
+      `<><span hidden={status !== "active" || undefined}>Active</span><span hidden={status === "active" || undefined}>Inactive</span></>`,
+      "Sibling elements swap",
     );
   });
 
-  it("catches hidden={x ? true : undefined}", () => {
+  it("catches three siblings swapping with hidden", () => {
     expectError(
-      `<div hidden={isLoading ? true : undefined}>Content</div>`,
-      "Conditional hidden prop",
+      `<><div hidden={s !== "a"}>A</div><div hidden={s !== "b"}>B</div><div hidden={s !== "c"}>C</div></>`,
+      "Sibling elements swap",
     );
   });
 
-  it("catches hidden={variable}", () => {
-    expectError(
-      `<span hidden={isHidden}>Text</span>`,
-      "Conditional hidden prop",
-    );
-  });
-
-  it("catches hidden={obj.prop}", () => {
-    expectError(
-      `<span hidden={sub.isPaused}>Paused</span>`,
-      "Conditional hidden prop",
-    );
-  });
-
-  it("catches hidden={x !== 'y'}", () => {
-    expectError(
-      `<Button hidden={status !== "paused"}>Resume</Button>`,
-      "Conditional hidden prop",
-    );
+  it("allows a single conditional hidden (not a swap)", () => {
+    expectClean(`<div hidden={!error || undefined}>{error}</div>`);
   });
 
   it("allows static hidden (no value)", () => {
@@ -866,6 +849,10 @@ describe("conditional hidden prop (layout shift)", () => {
 
   it("allows hidden={false}", () => {
     expectClean(`<div hidden={false}>Always visible</div>`);
+  });
+
+  it("allows lone conditional hidden on error message", () => {
+    expectClean(`<><div>Content</div><div hidden={!error || undefined}>{error}</div></>`);
   });
 });
 
