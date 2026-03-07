@@ -686,3 +686,46 @@ describe("Tailwind color utilities in className (banColorUtilities)", () => {
     );
   });
 });
+
+// ── Category 4: Geometric instability ──────────────────────
+
+describe("ternary content in JSX children", () => {
+  it("catches {loading ? <Spinner/> : <Content/>}", () => {
+    expectError(
+      `<div>{loading ? <Spinner /> : <Content />}</div>`,
+      "Conditional content",
+    );
+  });
+
+  it("catches {submitted ? 'Saved!' : 'Save'} in button", () => {
+    expectError(
+      `<button>{submitted ? "Saved!" : "Save"}</button>`,
+      "Conditional content",
+    );
+  });
+
+  it("catches ternary inside fragment child", () => {
+    expectError(
+      `<>{x ? <A /> : <B />}</>`,
+      "Conditional content",
+    );
+  });
+
+  it("allows ternary in data-attribute (correct pattern)", () => {
+    expectClean(
+      `<div data-state={x ? "active" : "inactive"} />`,
+    );
+  });
+
+  it("allows ternary in onClick handler", () => {
+    expectClean(
+      `<button onClick={() => x ? doA() : doB()} />`,
+    );
+  });
+
+  it("allows StateSwap (values in attributes, not children)", () => {
+    expectClean(
+      `<StateSwap state={x} true="Open" false="Close" />`,
+    );
+  });
+});

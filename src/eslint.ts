@@ -194,6 +194,15 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
           selector: `JSXAttribute[name.name='${prop}'] ConditionalExpression`,
           message: `Data-dependent ${prop}. Use a data-attribute and CSS selector instead of switching ${prop} with a ternary.`,
         })),
+
+        // --- 4. Geometric instability (conditional content) ---
+
+        {
+          selector:
+            ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > ConditionalExpression",
+          message:
+            "Conditional content causes layout shift. Use <StateSwap> for text, <LayoutMap> for keyed views, or <LoadingBoundary> for async states.",
+        },
       ],
     },
   };
