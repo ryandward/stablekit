@@ -32,14 +32,14 @@ describe("StateSwap", () => {
     expect(container.querySelector("div.sk-layout-group")).toBeTruthy();
   });
 
-  it("uses inline-grid so it works inside inline-flex (buttons, badges)", () => {
+  it("uses data-inline so it works inside inline-flex (buttons, badges)", () => {
     const { container } = render(
       <button style={{ display: "inline-flex" }}>
         <StateSwap state={true} true="Close" false="Open" />
       </button>
     );
     const group = container.querySelector(".sk-layout-group") as HTMLElement;
-    expect(group.style.display).toBe("inline-grid");
+    expect(group).toHaveAttribute("data-inline");
   });
 
   it("renders ReactNode content (not just strings)", () => {

@@ -46,7 +46,7 @@ export function StateSwap({
   ...props
 }: StateSwapProps) {
   return (
-    <LayoutGroup as={Tag} value={state ? "true" : "false"} axis="both" style={{ display: "inline-grid" }} {...props}>
+    <LayoutGroup as={Tag} value={state ? "true" : "false"} axis="both" data-inline {...props}>
       <LayoutView as="span" name="true">{onTrue}</LayoutView>
       <LayoutView as="span" name="false">{onFalse}</LayoutView>
     </LayoutGroup>

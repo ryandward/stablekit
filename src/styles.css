@@ -9,13 +9,19 @@
 
 /* All children overlap in the same grid cell.
    Grid auto-sizes to the largest child.
-   Views use flex-column so their content stretches to fill
-   the reserved width — the visual footprint is constant. */
+   Block-level groups use flex-column so content stretches to fill
+   the reserved width. Inline groups (data-inline) skip this — their
+   children are inline content that shouldn't be forced vertical. */
 .sk-layout-group {
   display: grid;
 }
+.sk-layout-group[data-inline] {
+  display: inline-grid;
+}
 .sk-layout-group > * {
   grid-area: 1 / 1;
+}
+.sk-layout-group:not([data-inline]) > * {
   display: flex;
   flex-direction: column;
 }
