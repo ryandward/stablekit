@@ -31,15 +31,15 @@ function expectClean(code: string, options?: Parameters<typeof createArchitectur
 
 describe("state tokens in className", () => {
   it("catches bg-success in className", () => {
-    expectError(`<span className="bg-success" />`, "Data-dependent");
+    expectError(`<span className="bg-success" />`, "State color token");
   });
 
   it("catches text-warning in className", () => {
-    expectError(`<span className="text-warning" />`, "Data-dependent");
+    expectError(`<span className="text-warning" />`, "State color token");
   });
 
   it("catches border-destructive in className", () => {
-    expectError(`<span className="border-destructive" />`, "Data-dependent");
+    expectError(`<span className="border-destructive" />`, "State color token");
   });
 
   it("allows non-state tokens", () => {
@@ -51,7 +51,7 @@ describe("conditional style objects", () => {
   it("catches ternary in style prop", () => {
     expectError(
       `<div style={x ? { opacity: 1 } : { opacity: 0 }} />`,
-      "Conditional style",
+      "Conditional style prop",
     );
   });
 });
@@ -60,7 +60,7 @@ describe("variant prop ternaries", () => {
   it("catches ternary on intent prop", () => {
     expectError(
       `<Button intent={x ? "primary" : "ghost"} />`,
-      "Data-dependent intent",
+      "Ternary on intent prop",
       { stateTokens: ["success"], variantProps: ["intent"] },
     );
   });
@@ -138,28 +138,28 @@ describe("color properties in style props", () => {
   it("catches style={{ color: getClassColor(cls) }}", () => {
     expectError(
       `<span style={{ color: getClassColor(cls) }} />`,
-      "color property in style",
+      "Color property in style prop",
     );
   });
 
   it("catches style={{ backgroundColor: '#fff' }}", () => {
     expectError(
       `<div style={{ backgroundColor: "#fff" }} />`,
-      "color property in style",
+      "Color property in style prop",
     );
   });
 
   it("catches style={{ background: color }}", () => {
     expectError(
       `<div style={{ background: color }} />`,
-      "color property in style",
+      "Color property in style prop",
     );
   });
 
   it("catches style={{ borderColor: x }}", () => {
     expectError(
       `<div style={{ borderColor: x }} />`,
-      "color property in style",
+      "Color property in style prop",
     );
   });
 
@@ -182,28 +182,28 @@ describe("className ternaries", () => {
   it("catches direct ternary on className", () => {
     expectError(
       `<span className={isActive ? "text-ocean" : "text-stone"} />`,
-      "Conditional className",
+      "className",
     );
   });
 
   it("catches ternary inside template literal className", () => {
     expectError(
       `<span className={\`base \${isActive ? "text-ocean" : "text-stone"}\`} />`,
-      "Conditional className",
+      "className",
     );
   });
 
   it("catches ternary inside cx() className", () => {
     expectError(
       `<span className={cx("base", isActive ? "font-bold" : "")} />`,
-      "Conditional className",
+      "className",
     );
   });
 
   it("catches active/inactive nav pattern", () => {
     expectError(
       `<NavLink className={({ isActive }) => isActive ? "text-accent font-bold" : "text-dim"} />`,
-      "Conditional className",
+      "className",
     );
   });
 
@@ -226,21 +226,21 @@ describe("className logical AND", () => {
   it("catches isActive && 'text-ocean' inside className", () => {
     expectError(
       `<span className={cn("base", isActive && "text-ocean")} />`,
-      "Conditional className",
+      "className",
     );
   });
 
   it("catches status check with logical AND", () => {
     expectError(
       `<span className={cn("base", status === "paid" && "text-green")} />`,
-      "Conditional className",
+      "className",
     );
   });
 
   it("catches logical AND in template literal className", () => {
     expectError(
       `<span className={\`base \${isOpen && "expanded"}\`} />`,
-      "Conditional className",
+      "className",
     );
   });
 });
@@ -313,14 +313,14 @@ describe("cx/cn object syntax in className", () => {
   it("catches cx({ 'text-green': isPaid })", () => {
     expectError(
       `<span className={cx({ "text-green": isPaid })} />`,
-      "Conditional className",
+      "className",
     );
   });
 
   it("catches cn({ 'font-bold': isActive, 'text-red': isError })", () => {
     expectError(
       `<span className={cn({ "font-bold": isActive, "text-red": isError })} />`,
-      "Conditional className",
+      "className",
     );
   });
 
@@ -549,14 +549,14 @@ describe("additional color properties in style props", () => {
   it("catches style={{ accentColor: '#22c55e' }}", () => {
     expectError(
       `<div style={{ accentColor: "#22c55e" }} />`,
-      "color property in style",
+      "Color property in style prop",
     );
   });
 
   it("catches style={{ caretColor: 'red' }}", () => {
     expectError(
       `<div style={{ caretColor: "red" }} />`,
-      "color property in style",
+      "Color property in style prop",
     );
   });
 });
@@ -567,7 +567,7 @@ describe("Tailwind color utilities in className (banColorUtilities)", () => {
   it("catches bg-red-500", () => {
     expectError(
       `<div className="bg-red-500" />`,
-      "Tailwind color utility",
+      "Tailwind palette color",
       { stateTokens: [], banColorUtilities: true },
     );
   });
@@ -575,7 +575,7 @@ describe("Tailwind color utilities in className (banColorUtilities)", () => {
   it("catches text-green-600", () => {
     expectError(
       `<span className="text-green-600" />`,
-      "Tailwind color utility",
+      "Tailwind palette color",
       { stateTokens: [], banColorUtilities: true },
     );
   });
@@ -583,7 +583,7 @@ describe("Tailwind color utilities in className (banColorUtilities)", () => {
   it("catches border-cyan-400", () => {
     expectError(
       `<div className="border-cyan-400" />`,
-      "Tailwind color utility",
+      "Tailwind palette color",
       { stateTokens: [], banColorUtilities: true },
     );
   });
@@ -591,7 +591,7 @@ describe("Tailwind color utilities in className (banColorUtilities)", () => {
   it("catches ring-indigo-500", () => {
     expectError(
       `<button className="ring-indigo-500" />`,
-      "Tailwind color utility",
+      "Tailwind palette color",
       { stateTokens: [], banColorUtilities: true },
     );
   });
@@ -599,7 +599,7 @@ describe("Tailwind color utilities in className (banColorUtilities)", () => {
   it("catches from-purple-500 (gradient)", () => {
     expectError(
       `<div className="from-purple-500" />`,
-      "Tailwind color utility",
+      "Tailwind palette color",
       { stateTokens: [], banColorUtilities: true },
     );
   });
@@ -607,7 +607,7 @@ describe("Tailwind color utilities in className (banColorUtilities)", () => {
   it("catches fill-rose-400 (SVG)", () => {
     expectError(
       `<svg className="fill-rose-400" />`,
-      "Tailwind color utility",
+      "Tailwind palette color",
       { stateTokens: [], banColorUtilities: true },
     );
   });
@@ -615,7 +615,7 @@ describe("Tailwind color utilities in className (banColorUtilities)", () => {
   it("catches text-slate-700 (neutral palette)", () => {
     expectError(
       `<p className="text-slate-700" />`,
-      "Tailwind color utility",
+      "Tailwind palette color",
       { stateTokens: [], banColorUtilities: true },
     );
   });
@@ -623,7 +623,7 @@ describe("Tailwind color utilities in className (banColorUtilities)", () => {
   it("catches divide-gray-200", () => {
     expectError(
       `<div className="divide-gray-200" />`,
-      "Tailwind color utility",
+      "Tailwind palette color",
       { stateTokens: [], banColorUtilities: true },
     );
   });
@@ -631,7 +631,7 @@ describe("Tailwind color utilities in className (banColorUtilities)", () => {
   it("catches color with opacity modifier", () => {
     expectError(
       `<div className="bg-blue-500/50" />`,
-      "Tailwind color utility",
+      "Tailwind palette color",
       { stateTokens: [], banColorUtilities: true },
     );
   });
@@ -639,7 +639,7 @@ describe("Tailwind color utilities in className (banColorUtilities)", () => {
   it("catches text-white", () => {
     expectError(
       `<span className="text-white" />`,
-      "Tailwind color utility",
+      "Tailwind palette color",
       { stateTokens: [], banColorUtilities: true },
     );
   });
@@ -647,7 +647,7 @@ describe("Tailwind color utilities in className (banColorUtilities)", () => {
   it("catches bg-black", () => {
     expectError(
       `<div className="bg-black" />`,
-      "Tailwind color utility",
+      "Tailwind palette color",
       { stateTokens: [], banColorUtilities: true },
     );
   });
@@ -694,21 +694,21 @@ describe("ternary content in JSX children", () => {
   it("catches {loading ? <Spinner/> : <Content/>}", () => {
     expectError(
       `<div>{loading ? <Spinner /> : <Content />}</div>`,
-      "Conditional content in JSX children. Extract to a const",
+      "Ternary in JSX children",
     );
   });
 
   it("catches {submitted ? 'Saved!' : 'Save'} in button", () => {
     expectError(
       `<button>{submitted ? "Saved!" : "Save"}</button>`,
-      "Conditional content in JSX children. Extract to a const",
+      "Ternary in JSX children",
     );
   });
 
   it("catches ternary inside fragment child", () => {
     expectError(
       `<>{x ? <A /> : <B />}</>`,
-      "Conditional content in JSX children. Extract to a const",
+      "Ternary in JSX children",
     );
   });
 
@@ -735,14 +735,14 @@ describe("conditional mount via && in JSX children", () => {
   it("catches {expanded && <Panel/>}", () => {
     expectError(
       `<div>{expanded && <Panel />}</div>`,
-      "Conditional mount in JSX children. Extract to a const",
+      "Conditional mount in JSX children",
     );
   });
 
   it("catches {error && <span>msg</span>}", () => {
     expectError(
       `<div>{error && <span>Error occurred</span>}</div>`,
-      "Conditional mount in JSX children. Extract to a const",
+      "Conditional mount in JSX children",
     );
   });
 
@@ -757,7 +757,7 @@ describe("fallback content via || in JSX children", () => {
   it("catches {name || 'Unknown'}", () => {
     expectError(
       `<span>{name || "Unknown"}</span>`,
-      "Fallback content in JSX children. Extract to a const",
+      "Fallback content in JSX children",
     );
   });
 
@@ -787,14 +787,14 @@ describe("interpolated text in JSX children", () => {
   it("catches template literal with expression", () => {
     expectError(
       "<span>{`Charge All (${count})`}</span>",
-      "Interpolated text in JSX children. Extract to a const",
+      "Interpolated text in JSX children",
     );
   });
 
   it("catches template literal with multiple expressions", () => {
     expectError(
       "<span>{`${qty} items at $${price}`}</span>",
-      "Interpolated text in JSX children. Extract to a const",
+      "Interpolated text in JSX children",
     );
   });
 
@@ -811,27 +811,27 @@ describe("interpolated text in JSX children", () => {
   });
 });
 
-// ── Category 4b: Sibling hidden swap ────────────────────────────
+// ── Category 4b: Sibling hidden swap (custom rule) ──────────────
 
 describe("sibling hidden swap (layout shift)", () => {
-  it("catches two siblings with complementary conditional hidden", () => {
+  it("catches two siblings with complementary conditional hidden (same variable)", () => {
     expectError(
       `<><Button hidden={isPaused}>Resume</Button><Button hidden={!isPaused}>Pause</Button></>`,
-      "Sibling elements swap",
+      "Sibling elements test the same variable in hidden",
     );
   });
 
-  it("catches siblings with || undefined pattern", () => {
+  it("catches siblings with || undefined pattern (same variable)", () => {
     expectError(
       `<><span hidden={status !== "active" || undefined}>Active</span><span hidden={status === "active" || undefined}>Inactive</span></>`,
-      "Sibling elements swap",
+      "Sibling elements test the same variable in hidden",
     );
   });
 
-  it("catches three siblings swapping with hidden", () => {
+  it("catches three siblings swapping with hidden (same variable)", () => {
     expectError(
       `<><div hidden={s !== "a"}>A</div><div hidden={s !== "b"}>B</div><div hidden={s !== "c"}>C</div></>`,
-      "Sibling elements swap",
+      "Sibling elements test the same variable in hidden",
     );
   });
 
@@ -854,6 +854,18 @@ describe("sibling hidden swap (layout shift)", () => {
   it("allows lone conditional hidden on error message", () => {
     expectClean(`<><div>Content</div><div hidden={!error || undefined}>{error}</div></>`);
   });
+
+  it("allows siblings with DIFFERENT variables (independent items, not a swap)", () => {
+    expectClean(
+      `<div><div hidden={!hasDispenser || undefined}>Dispenser</div><div hidden={!hasExtras || undefined}>Extras</div><div hidden={!hasDelivery || undefined}>Delivery</div></div>`,
+    );
+  });
+
+  it("allows two elements with conditional hidden in DIFFERENT parents", () => {
+    expectClean(
+      `<div><div hidden={a || undefined}>A</div></div>`,
+    );
+  });
 });
 
 // ── Category 5: className on firewalled components ──────────────
@@ -864,7 +876,7 @@ describe("className on firewalled components", () => {
   it("catches className on a blocked component", () => {
     expectError(
       `<Input className="pl-9" />`,
-      "className on a firewalled component",
+      "className passed to a firewalled component",
       blocked,
     );
   });
@@ -872,7 +884,7 @@ describe("className on firewalled components", () => {
   it("catches className on another blocked component", () => {
     expectError(
       `<Button className="mt-4 w-full" />`,
-      "className on a firewalled component",
+      "className passed to a firewalled component",
       blocked,
     );
   });
@@ -880,7 +892,7 @@ describe("className on firewalled components", () => {
   it("catches className expression on blocked component", () => {
     expectError(
       `<Card className={styles.card} />`,
-      "className on a firewalled component",
+      "className passed to a firewalled component",
       blocked,
     );
   });
@@ -937,7 +949,7 @@ describe("loading prop + conditional variable children conflict", () => {
         const label = x ? "Loading..." : "Submit";
         return <Button loading={x}>{label}</Button>;
       }`,
-      "Conditional variable as children",
+      "Conditional variable as children of a component with a loading prop",
     );
   });
 
@@ -947,7 +959,7 @@ describe("loading prop + conditional variable children conflict", () => {
         const label = x && "Loading...";
         return <Button loading={x}>{label}</Button>;
       }`,
-      "Conditional variable as children",
+      "Conditional variable as children of a component with a loading prop",
     );
   });
 
@@ -957,7 +969,7 @@ describe("loading prop + conditional variable children conflict", () => {
         const label = \`Confirm (\${count})\`;
         return <Button loading={x}>{label}</Button>;
       }`,
-      "Conditional variable as children",
+      "Conditional variable as children of a component with a loading prop",
     );
   });
 

@@ -27,8 +27,6 @@
   display: inline-flex;
   flex-direction: row;
   align-items: center;
-}
-.sk-layout-group[data-inline] > * > * {
   width: 100%;
 }
 

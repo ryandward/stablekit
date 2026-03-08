@@ -72,6 +72,133 @@ export interface ArchitectureLintOptions {
   files?: string[];
 }
 
+// ── Custom rule: no-hidden-swap ────────────────────────────────────────────
+// Catches sibling JSX elements that swap visibility by testing the SAME
+// variable in their hidden expressions. Independent conditional items
+// (each testing a different variable) are fine — only mutual-exclusion
+// patterns need <StateSwap> or <LayoutMap>.
+//
+// Detection: extract the "subject" identifier from each hidden expression,
+// then group siblings by subject. Groups of 2+ sharing a subject are swaps.
+//
+// Recognized patterns:
+//   hidden={x}                    → subject "x"
+//   hidden={!x}                   → subject "x"
+//   hidden={x !== "a"}            → subject "x"
+//   hidden={x !== "a" || undefined} → subject "x"
+//   hidden={!x || undefined}      → subject "x"
+
+const noHiddenSwapRule: any = {
+  meta: {
+    type: "problem",
+    schema: [],
+    messages: {
+      swap:
+        "Sibling elements test the same variable in hidden to swap visibility — " +
+        "neither reserves space when hidden, causing layout shift. " +
+        "Use <StateSwap> for two states, <StateMap> for inline multi-state, or <LayoutMap> for block-level multi-state.",
+    },
+  },
+  create(context: any) {
+    // Extract the hidden attribute's expression node, or null
+    function getHiddenExpr(node: any): any | null {
+      if (node.type !== "JSXElement") return null;
+      const attrs = node.openingElement?.attributes ?? [];
+      for (const attr of attrs) {
+        if (
+          attr.type === "JSXAttribute" &&
+          attr.name?.name === "hidden" &&
+          attr.value?.type === "JSXExpressionContainer" &&
+          attr.value.expression?.type !== "Literal"
+        ) {
+          return attr.value.expression;
+        }
+      }
+      return null;
+    }
+
+    // Unwrap `expr || undefined` → expr
+    function unwrapOrUndefined(expr: any): any {
+      if (
+        expr.type === "LogicalExpression" &&
+        expr.operator === "||" &&
+        expr.right.type === "Identifier" &&
+        expr.right.name === "undefined"
+      ) {
+        return expr.left;
+      }
+      return expr;
+    }
+
+    // Extract the subject identifier name from a hidden expression.
+    // Returns the variable name being tested, or null if unrecognizable.
+    function getSubject(rawExpr: any): string | null {
+      const expr = unwrapOrUndefined(rawExpr);
+
+      // hidden={x} or hidden={!x || undefined} after unwrap
+      if (expr.type === "Identifier") return expr.name;
+
+      // hidden={!x}
+      if (expr.type === "UnaryExpression" && expr.operator === "!" && expr.argument.type === "Identifier") {
+        return expr.argument.name;
+      }
+
+      // hidden={x !== "a"} or hidden={x === "a"}
+      if (expr.type === "BinaryExpression" && (expr.operator === "!==" || expr.operator === "===")) {
+        if (expr.left.type === "Identifier") return expr.left.name;
+        if (expr.right.type === "Identifier") return expr.right.name;
+      }
+
+      // hidden={x == null} or hidden={x != null}
+      if (expr.type === "BinaryExpression" && (expr.operator === "==" || expr.operator === "!=")) {
+        if (expr.left.type === "Identifier") return expr.left.name;
+        if (expr.right.type === "Identifier") return expr.right.name;
+      }
+
+      return null;
+    }
+
+    function checkChildren(children: any[]) {
+      // Collect { node, subject } for each child with dynamic hidden
+      const entries: { node: any; subject: string | null }[] = [];
+      for (const child of children) {
+        const expr = getHiddenExpr(child);
+        if (expr) {
+          entries.push({ node: child, subject: getSubject(expr) });
+        }
+      }
+
+      // Group by subject — only flag groups where 2+ share the same subject
+      const bySubject = new Map<string, any[]>();
+      for (const entry of entries) {
+        if (entry.subject) {
+          const group = bySubject.get(entry.subject) ?? [];
+          group.push(entry.node);
+          bySubject.set(entry.subject, group);
+        }
+      }
+
+      for (const [, group] of bySubject) {
+        if (group.length >= 2) {
+          // Report on the second element onward
+          for (let i = 1; i < group.length; i++) {
+            context.report({ node: group[i], messageId: "swap" });
+          }
+        }
+      }
+    }
+
+    return {
+      JSXElement(node: any) {
+        checkChildren(node.children ?? []);
+      },
+      JSXFragment(node: any) {
+        checkChildren(node.children ?? []);
+      },
+    };
+  },
+};
+
 // ── Custom rule: no-loading-conflict ──────────────────────────────────────
 // Uses scope analysis to only flag variables derived from conditional
 // expressions. Props (function parameters) are allowed.
@@ -113,11 +240,9 @@ const noLoadingConflictRule: any = {
     ],
     messages: {
       conflict:
-        "Conditional variable as children of a component with a loading prop. " +
-        "The loading prop triggers an internal content swap — if children also " +
-        "change, both sides shrink simultaneously and pre-allocation is defeated. " +
-        "Use static children with the loading prop, or handle the entire swap " +
-        "explicitly with <StateSwap> in the caller.",
+        "Conditional variable as children of a component with a loading prop (e.g. <Button loading={x}>{label}</Button> where label = x ? 'A' : 'B'). " +
+        "The loading prop triggers an internal content swap — if children also change, both sides shrink simultaneously and pre-allocation is defeated. " +
+        "Fix: use static children (e.g. 'Submit'), or move the entire swap to the caller with <StateSwap>/<StateMap>.",
     },
   },
   create(context: any) {
@@ -204,29 +329,31 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
 
         {
           selector: "Literal[value=/text-\\[\\d+/]",
-          message: "Hardcoded font size. Define a named token in @theme.",
+          message:
+            "Hardcoded font size in className (e.g. text-[14px]). Add a named size to @theme and use it instead — hardcoded sizes can't be updated globally.",
         },
         {
           selector: "Literal[value=/\\[.*(?:#[0-9a-fA-F]|rgba?).*\\]/]",
-          message: "Hardcoded color value. Define a CSS custom property.",
+          message:
+            "Hardcoded color in Tailwind bracket syntax (e.g. bg-[#f00]). Define a CSS custom property in your tokens and reference it — colors in JS can't be themed or audited.",
         },
         {
           selector:
             "JSXAttribute[name.name='style'] Property > Literal[value=/(?:#[0-9a-fA-F]{3,8}|rgba?\\()/]",
           message:
-            "Hardcoded color value in style object. Define a CSS custom property.",
+            "Hardcoded color in style prop. Move this to a CSS custom property — style={{ color: '#f00' }} can't be themed, overridden by cascade layers, or found by grep.",
         },
         {
           selector:
             "Literal[value=/^#[0-9a-fA-F]{3}([0-9a-fA-F]([0-9a-fA-F]{2}([0-9a-fA-F]{2})?)?)?$/]",
           message:
-            "Hardcoded hex color. Define a CSS custom property.",
+            "Hardcoded hex color (e.g. '#5865F2'). Define a CSS custom property and reference it — colors in JS bypass the cascade and can't be themed.",
         },
         {
           selector:
             "Literal[value=/(?:^|[^a-zA-Z])(?:rgba?|hsla?|oklch|lab|lch)\\(/]",
           message:
-            "Hardcoded color function. Define a CSS custom property.",
+            "Hardcoded color function (e.g. rgba(), hsl()). Define a CSS custom property and reference it — color functions in JS bypass the cascade and can't be themed.",
         },
 
         // --- 1b. Color properties in style props ---
@@ -235,7 +362,7 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
           selector:
             "JSXAttribute[name.name='style'] Property[key.name=/^(color|backgroundColor|background|borderColor|outlineColor|fill|stroke|accentColor|caretColor)$/]",
           message:
-            "Visual color property in style prop. Use a data-attribute and CSS selector.",
+            "Color property in style prop (e.g. style={{ backgroundColor: x }}). CSS owns color — use a className or data-attribute with a CSS rule instead. If the color is data-driven, set a data-attribute and handle it in your exceptions CSS.",
         },
 
         // --- 1c. Visual state properties in style props ---
@@ -244,7 +371,7 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
           selector:
             "JSXAttribute[name.name='style'] Property[key.name=/^(opacity|visibility|transition|pointerEvents)$/]",
           message:
-            "Visual state property in style prop. Use a data-attribute and CSS selector.",
+            "Visual state property in style prop (e.g. style={{ opacity }}). These are presentation concerns — use a data-attribute and CSS selector so the visual logic lives in CSS, not JS.",
         },
 
         // --- 1d. Hardcoded magic numbers ---
@@ -252,24 +379,24 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
         {
           selector: "Literal[value=/z-\\[\\d/]",
           message:
-            "Hardcoded z-index. Define a named z-index token in @theme.",
+            "Hardcoded z-index (e.g. z-[999]). Define a named z-index token in @theme (e.g. --z-dropdown, --z-modal) — magic z-indices create stacking conflicts that are impossible to debug.",
         },
         {
           selector: "Literal[value=/-m\\w?-\\[|m\\w?-\\[-/]",
           message:
-            "Negative margin with magic number. This usually fights the layout — fix the spacing structure instead.",
+            "Negative margin with magic number (e.g. -mt-[8px]). Negative margins fight the layout — fix the spacing structure (padding, gap) instead of compensating with negative offsets.",
         },
         {
           selector:
             "Literal[value=/(?:min-|max-)?(?:w|h)-\\[\\d+px\\]/]",
           message:
-            "Hardcoded pixel dimension. Define a named size token in @theme or use a relative unit.",
+            "Hardcoded pixel dimension (e.g. w-[347px]). Define a named size token in @theme or use a relative unit — pixel dimensions break at different viewport sizes and can't be updated globally.",
         },
         {
           selector:
             "Literal[value=/\\w-\\[(?!calc).*?\\d+(?![\\d%]|[dsl]?v[hw]|fr)/]",
           message:
-            "Hardcoded magic number in arbitrary value. Define a named token in @theme or use a standard utility.",
+            "Hardcoded magic number in arbitrary value (e.g. rounded-[3px], gap-[12px]). Define a named token in @theme — magic numbers scattered across components can't be updated globally.",
         },
 
         // --- 2. Data-dependent visual decisions (project-specific) ---
@@ -279,32 +406,32 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
               {
                 selector: `Literal[value=/\\b(bg|text|border)-(${tokenPattern})/]`,
                 message:
-                  "Data-dependent visual property. Use a data-attribute and CSS selector.",
+                  "State color token in className (e.g. bg-success, text-warning). State-driven colors belong in CSS — set a data-attribute (data-status, data-variant) on the element and write a CSS selector that maps the attribute to the color.",
               },
             ]
           : []),
         {
           selector: "JSXAttribute[name.name='style'] ConditionalExpression",
           message:
-            "Conditional style object. Use a data-state attribute and CSS selector.",
+            "Conditional style prop (e.g. style={x ? {...} : {...}}). JS is deciding what the component looks like — set a data-attribute and let CSS handle the visual change.",
         },
         {
           selector:
             "JSXAttribute[name.name='className'] ConditionalExpression",
           message:
-            "Conditional className. Use a data-attribute and CSS selector instead of switching classes with a ternary.",
+            "Ternary in className (e.g. className={x ? 'a' : 'b'}). JS is picking the visual treatment — set a data-attribute and write CSS selectors for each state instead.",
         },
         {
           selector:
             "JSXAttribute[name.name='className'] LogicalExpression[operator='&&']",
           message:
-            "Conditional className. Use a data-attribute and CSS selector instead of conditionally applying classes.",
+            "Conditional className (e.g. isActive && 'bold'). JS is toggling visual properties — set a data-attribute and write a CSS selector instead.",
         },
         {
           selector:
             "JSXAttribute[name.name='className'] ObjectExpression",
           message:
-            "Conditional className via object syntax. Use a data-attribute and CSS selector instead of cx/cn({ class: condition }).",
+            "Object syntax in className (e.g. cx({ 'text-red': isError })). This is conditional visual logic in JS — set a data-attribute and write CSS selectors instead.",
         },
 
         // --- 2c. !important in className ---
@@ -313,7 +440,7 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
           selector:
             "JSXAttribute[name.name='className'] Literal[value=/(?:^|\\s)![a-z]/]",
           message:
-            "Tailwind !important modifier in className. !important breaks the cascade — use specificity or data-attributes.",
+            "!important modifier in className (e.g. !font-bold). !important breaks cascade layers and makes overrides unpredictable — use a more specific selector or data-attribute instead.",
         },
 
         // --- 2d. Tailwind color utilities in className ---
@@ -323,7 +450,7 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
               {
                 selector: `Literal[value=/(?:^|\\s)(?:${twPrefixes})-(?:${twColors})(?:-\\d+)?(?:\\/\\d+)?(?:\\s|$)/]`,
                 message:
-                  "Tailwind color utility in className. Colors belong in CSS — use a CSS class with a custom property or data-attribute selector.",
+                  "Tailwind palette color in className (e.g. bg-red-500, text-green-600). Colors belong in CSS — use a semantic CSS class or data-attribute selector. If you put colors in JSX, changing a color requires editing every component that uses it.",
               },
             ]
           : []),
@@ -332,7 +459,7 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
 
         ...variantProps.map((prop) => ({
           selector: `JSXAttribute[name.name='${prop}'] ConditionalExpression`,
-          message: `Data-dependent ${prop}. Use a data-attribute and CSS selector instead of switching ${prop} with a ternary.`,
+          message: `Ternary on ${prop} prop (e.g. ${prop}={x ? 'a' : 'b'}). This component uses createPrimitive — set a data-attribute and let CSS map data to visual treatment instead of switching ${prop} in JS.`,
         })),
 
         // --- 4. Geometric instability (conditional content) ---
@@ -341,45 +468,45 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
           selector:
             ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > ConditionalExpression",
           message:
-            "Conditional content in JSX children. Extract to a const above the return (the linter won't flag a plain variable). Do NOT replace with the hidden attribute. For state-driven swaps, use <StateSwap> for text, <StateMap> for keyed views, or <LoadingBoundary> for async states.",
+            "Ternary in JSX children (e.g. {x ? <A/> : <B/>}). This causes layout shift — the container resizes when the content swaps. " +
+            "Quick fix: extract to a const above the return. " +
+            "Proper fix: <StateSwap> for two states, <StateMap> for inline multi-state, <LayoutMap> for block-level multi-state, or <LoadingBoundary> for async data.",
         },
         {
           selector:
             ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > LogicalExpression[operator='&&']",
           message:
-            "Conditional mount in JSX children. Extract to a const above the return (the linter won't flag a plain variable). Do NOT use the hidden attribute — it renders children unconditionally and will crash on null data. For state-driven mounts, use <FadeTransition> for enter/exit, <StableField> for form errors, or <LayoutGroup> for pre-rendered views.",
+            "Conditional mount in JSX children (e.g. {show && <Panel/>}). When this mounts/unmounts, the container resizes. " +
+            "Quick fix: extract to a const above the return. " +
+            "Proper fix: <FadeTransition> for enter/exit animation, <StableField> for form error messages, or <LayoutGroup>/<LayoutMap> for pre-rendered views. " +
+            "Do NOT replace with hidden — it renders children unconditionally and will crash on null data.",
         },
         {
           selector:
             ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > LogicalExpression[operator='||']",
           message:
-            "Fallback content in JSX children. Extract to a const above the return (the linter won't flag a plain variable). For state-driven fallbacks, use <StateSwap> to pre-allocate space for both states.",
+            "Fallback content in JSX children (e.g. {name || 'Unknown'}). When the value changes length, the container resizes. " +
+            "Quick fix: extract to a const above the return. " +
+            "Proper fix: <StateSwap> to pre-allocate space for both states.",
         },
         {
           selector:
             ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > LogicalExpression[operator='??']",
           message:
-            "Nullish fallback in JSX children. Extract to a const above the return (the linter won't flag a plain variable). For state-driven fallbacks, use <StateSwap> to pre-allocate space for both states.",
+            "Nullish fallback in JSX children (e.g. {title ?? 'Loading...'}). When the value arrives, the container resizes. " +
+            "Quick fix: extract to a const above the return. " +
+            "Proper fix: <StateSwap> to pre-allocate space for both states, or <LoadingBoundary> if waiting for async data.",
         },
         {
           selector:
             ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > TemplateLiteral",
           message:
-            "Interpolated text in JSX children. Extract to a const above the return (the linter won't flag a plain variable). For state-driven values, use <StableCounter> for numbers or <StateSwap> for text variants.",
+            "Interpolated text in JSX children (e.g. {`${count} items`}). When the value changes (especially digit count), the container resizes. " +
+            "Quick fix: extract to a const above the return. " +
+            "Proper fix: <StableCounter> for numbers that change digit count, or <StateSwap> for text that changes between known variants.",
         },
 
-        // --- 4b. Sibling hidden swap (geometric instability) ---
-        // Two sibling elements both using conditional hidden to swap
-        // visibility — neither reserves space for the other.
-        // A single hidden={condition} (e.g. error message at bottom of
-        // layout) is fine and intentionally not flagged.
-
-        {
-          selector:
-            "JSXElement:has(JSXOpeningElement JSXAttribute[name.name='hidden'] > JSXExpressionContainer > :not(Literal)) ~ JSXElement:has(JSXOpeningElement JSXAttribute[name.name='hidden'] > JSXExpressionContainer > :not(Literal))",
-          message:
-            "Sibling elements swap visibility with conditional hidden — neither reserves space for the other, causing layout shift. Use <StateSwap> for two states or <LayoutMap> for multiple states.",
-        },
+        // --- 4b removed: sibling hidden swap is now a custom rule ---
 
         // --- 5. className on firewalled components ---
 
@@ -388,18 +515,20 @@ export function createArchitectureLint(options: ArchitectureLintOptions) {
               {
                 selector: `JSXOpeningElement[name.name=/^(${classNameBlocked.join("|")})$/] > JSXAttribute[name.name='className']`,
                 message:
-                  "className on a firewalled component. This component owns its own styling — use a data-attribute, variant prop, or CSS class internally instead of passing Tailwind utilities from the consumer.",
+                  "className passed to a firewalled component (built with createPrimitive). This component owns its styling — pass a data-attribute or variant prop instead. The component maps those to visuals internally via CSS.",
               },
             ]
           : []),
 
       ],
       "stablekit/no-loading-conflict": ["error", { passthrough: loadingPassthrough }],
+      "stablekit/no-hidden-swap": "error",
     },
     plugins: {
       stablekit: {
         rules: {
           "no-loading-conflict": noLoadingConflictRule,
+          "no-hidden-swap": noHiddenSwapRule,
         },
       },
     },
