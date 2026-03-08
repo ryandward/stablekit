@@ -436,3 +436,79 @@ export function createStyleLint(options: StyleLintOptions = {}) {
 
   return { files, plugins, rules };
 }
+
+/**
+ * Audit a CSS file for design fragmentation.
+ *
+ * Groups all rules by pseudo-class / state selector (:hover, :focus,
+ * [data-state], [data-status], etc.) and prints the declaration patterns
+ * so you can see how many ways you're expressing the same concept.
+ *
+ * Usage:
+ *   import { auditCSS } from "stablekit/stylelint";
+ *   auditCSS("/path/to/index.css");
+ *
+ * Or from CLI:
+ *   node -e 'require("stablekit.ts/stylelint").auditCSS("src/index.css")'
+ */
+/* eslint-disable @typescript-eslint/no-explicit-any, no-console */
+export function auditCSS(filePath: string) {
+  // Dynamic require so postcss isn't a hard dependency
+  const fs = require("fs") as typeof import("fs");
+  const postcss = require("postcss") as { parse: (css: string) => any };
+
+  const css = fs.readFileSync(filePath, "utf8");
+  const root = postcss.parse(css);
+
+  const statePatterns = [
+    { label: ":hover", test: (s: string) => s.includes(":hover") },
+    { label: ":focus / :focus-visible", test: (s: string) => s.includes(":focus") },
+    { label: ":active", test: (s: string) => s.includes(":active") && !s.includes("[data-") },
+    { label: ":disabled", test: (s: string) => s.includes(":disabled") },
+    { label: "[data-state]", test: (s: string) => /\[data-state/.test(s) },
+    { label: "[data-status]", test: (s: string) => /\[data-status/.test(s) },
+    { label: "[data-highlighted]", test: (s: string) => s.includes("[data-highlighted]") },
+    { label: "[data-active]", test: (s: string) => /\[data-active/.test(s) },
+  ];
+
+  for (const { label, test } of statePatterns) {
+    const rules: Array<{ selector: string; decls: string }> = [];
+
+    root.walkRules((rule: any) => {
+      if (!test(rule.selector)) return;
+      if (rule.parent?.type === "atrule" && rule.parent.name === "keyframes") return;
+
+      const parts: string[] = [];
+      for (const child of rule.nodes ?? []) {
+        if (child.type === "decl") parts.push(`${child.prop}: ${child.value}`);
+        if (child.type === "atrule" && child.name === "apply") parts.push(`@apply ${child.params}`);
+      }
+      if (parts.length === 0) return;
+      rules.push({ selector: rule.selector, decls: parts.join("; ") });
+    });
+
+    if (rules.length === 0) continue;
+
+    // Group by declaration fingerprint
+    const groups = new Map<string, string[]>();
+    for (const { selector, decls } of rules) {
+      const fp = decls.split("; ").sort().join("; ");
+      const g = groups.get(fp);
+      if (g) g.push(selector);
+      else groups.set(fp, [selector]);
+    }
+
+    console.log(`\n═══ ${label} (${rules.length} rules, ${groups.size} unique patterns) ═══\n`);
+    for (const [fp, selectors] of groups) {
+      if (selectors.length > 1) {
+        console.log(`  [${selectors.length}x] ${fp}`);
+        for (const s of selectors) console.log(`       ${s}`);
+      } else {
+        console.log(`  [1x] ${fp}`);
+        console.log(`       ${selectors[0]}`);
+      }
+      console.log();
+    }
+  }
+}
+/* eslint-enable @typescript-eslint/no-explicit-any, no-console */
