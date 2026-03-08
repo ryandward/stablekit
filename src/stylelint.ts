@@ -27,7 +27,7 @@
  *    top/right/bottom/left). These trigger reflow on every frame.
  *    Use transform (scaleY, translateY) or opacity instead.
  *
- * 6. Don't duplicate rulesets — two selectors with byte-identical
+ * 6. Don't duplicate rulesets — two selectors with identical
  *    declarations (after sorting) should be consolidated under one
  *    shared class name. The warning includes the matched declarations
  *    so the developer can see why they were flagged.
@@ -57,7 +57,6 @@ export interface StyleLintOptions {
 const pluginRuleName = "stablekit/no-functional-in-utility";
 const descendantColorRuleName = "stablekit/no-descendant-color-in-state";
 const duplicateRulesetRuleName = "stablekit/no-duplicate-ruleset";
-const nearDuplicateRuleName = "stablekit/no-near-duplicate-ruleset";
 const undefinedTokenRuleName = "stablekit/no-undefined-token";
 
 /**
@@ -225,97 +224,6 @@ function createDuplicateRulesetPlugin() {
   };
 }
 
-/**
- * Stylelint plugin that flags near-duplicate rulesets.
- *
- * Two rules are "near-duplicates" when they have the same set of property
- * names but differ in at most 1 value. This catches the "30 ways to say
- * muted small text" problem — font-size: 11px vs 12px, gap: 10px vs 12px.
- */
-function createNearDuplicatePlugin() {
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  interface RuleEntry {
-    selector: string;
-    /** Sorted property names as key */
-    propKey: string;
-    /** Map of prop → value for diff comparison */
-    propMap: Map<string, string>;
-    node: any;
-  }
-
-  function collectDirectDecls(ruleNode: any): Map<string, string> {
-    const map = new Map<string, string>();
-    for (const child of ruleNode.nodes ?? []) {
-      if (child.type === "decl") {
-        map.set(child.prop, child.value);
-      } else if (child.type === "atrule" && child.name === "apply") {
-        map.set(`@apply`, child.params);
-      }
-    }
-    return map;
-  }
-
-  const rule = (enabled: boolean) => {
-    return (
-      root: any,
-      result: { warn: (message: string, options: { node: unknown }) => void },
-    ) => {
-      if (!enabled) return;
-
-      // Group rules by their sorted property names
-      const groups = new Map<string, RuleEntry[]>();
-
-      root.walkRules((ruleNode: any) => {
-        if (ruleNode.parent?.type === "atrule" && ruleNode.parent.name === "keyframes") return;
-
-        const propMap = collectDirectDecls(ruleNode);
-        if (propMap.size < 2) return;
-
-        const propKey = [...propMap.keys()].sort().join(", ");
-        const entry: RuleEntry = { selector: ruleNode.selector, propKey, propMap, node: ruleNode };
-
-        const group = groups.get(propKey);
-        if (group) {
-          // Compare against all existing entries in this group
-          for (const existing of group) {
-            // Skip if identical (caught by no-duplicate-ruleset)
-            let diffCount = 0;
-            let diffProp = "";
-            let diffOld = "";
-            let diffNew = "";
-            for (const [prop, value] of entry.propMap) {
-              const existingValue = existing.propMap.get(prop);
-              if (existingValue !== value) {
-                diffCount++;
-                diffProp = prop;
-                diffOld = existingValue ?? "(missing)";
-                diffNew = value;
-              }
-            }
-            if (diffCount === 0) continue; // exact dup — handled elsewhere
-            // Skip when the only diff is @apply — too coarse to compare
-            if (diffCount === 1 && diffProp !== "@apply") {
-              result.warn(
-                `Near-duplicate ruleset — "${ruleNode.selector}" differs from "${existing.selector}" only in ${diffProp} (${diffOld} → ${diffNew}). Consider consolidating to a single class.`,
-                { node: ruleNode },
-              );
-              break; // one warning per rule is enough
-            }
-          }
-          group.push(entry);
-        } else {
-          groups.set(propKey, [entry]);
-        }
-      });
-    };
-  };
-  /* eslint-enable @typescript-eslint/no-explicit-any */
-
-  return {
-    ruleName: nearDuplicateRuleName,
-    rule,
-  };
-}
 
 /**
  * Stylelint plugin that flags var() references to custom properties
@@ -389,7 +297,7 @@ export function createStyleLint(options: StyleLintOptions = {}) {
     files = ["src/**/*.css"],
   } = options;
 
-  const plugins: unknown[] = [createDescendantColorPlugin(), createDuplicateRulesetPlugin(), createNearDuplicatePlugin(), createUndefinedTokenPlugin(runtimeTokens)];
+  const plugins: unknown[] = [createDescendantColorPlugin(), createDuplicateRulesetPlugin(), createUndefinedTokenPlugin(runtimeTokens)];
   if (functionalTokens.length > 0) {
     plugins.push(createFunctionalTokenPlugin(functionalTokens));
   }
@@ -411,9 +319,6 @@ export function createStyleLint(options: StyleLintOptions = {}) {
 
     // Flag selectors with identical declarations for consolidation.
     [duplicateRulesetRuleName]: true,
-
-    // Flag near-duplicate rulesets (same props, differ by 1 value).
-    [nearDuplicateRuleName]: true,
 
     // Flag var() references to custom properties not defined in this file.
     [undefinedTokenRuleName]: true,
