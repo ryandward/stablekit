@@ -121,32 +121,21 @@
 
 /* ── FadeTransition ────────────────────────────────────────────────────────── */
 
+/* Minimal default: fade in on enter, instant unmount on exit.
+   Consumers can add their own .sk-fade-exiting animation
+   for custom exit behavior — usePresence will detect and wait. */
+
 .sk-fade {
   --sk-fade-duration: 400ms;
 }
 
 .sk-fade-entering {
-  animation: sk-emerge var(--sk-fade-duration) var(--sk-ease-decelerate) forwards;
+  animation: sk-fade-in var(--sk-fade-duration) var(--sk-ease-decelerate) forwards;
 }
 
-.sk-fade-exiting {
-  animation: sk-collapse var(--sk-fade-duration) var(--sk-ease-accelerate) forwards;
-}
-
-@keyframes sk-emerge {
-  from {
-    opacity: 0;
-    transform: translateY(var(--sk-fade-offset-y, -12px)) scale(var(--sk-fade-offset-scale, 0.98));
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes sk-collapse {
-  from { opacity: 1; transform: scaleY(1); transform-origin: top; }
-  to   { opacity: 0; transform: scaleY(0); transform-origin: top; }
+@keyframes sk-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 /* ── Loading layers ────────────────────────────────────────────────────────── */
